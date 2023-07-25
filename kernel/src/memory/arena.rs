@@ -45,7 +45,7 @@ pub struct Arena<'arena> {
     // invariant.
     pub(super) hashcons_terms: HashSet<&'arena super::term::Node<'arena>>,
     pub(super) hashcons_decls: HashSet<&'arena super::declaration::Node<'arena>>,
-    pub(super) hashcons_levels: HashMap<&'arena super::level::Node<'arena>, super::level::Level<'arena>>,
+    pub(super) hashcons_levels: HashMap<&'arena super::level::Payload<'arena>, super::level::Level<'arena>>,
 
     named_decls: HashMap<&'arena str, Declaration<'arena>>,
     named_terms: HashMap<&'arena str, Term<'arena>>,
@@ -172,7 +172,10 @@ accelerating specific algorithms.")]
         pub struct $dweller<'arena>(&'arena Node<'arena>, core::marker::PhantomData<*mut &'arena ()>);
 
         pub(super) struct Node<'arena> {
+            // allow unused headers for symmetry
+            #[allow(dead_code)]
             header: $header<'arena>,
+
             payload: $payload<'arena>,
         }
 
@@ -204,11 +207,13 @@ match *t {
 # ;})
 ```
 Please note that this trait has some limits. For instance, the notations used to match against
-a *pair* of", stringify!($dweller), "s still requires some convolution.")]
+a *pair* of ", stringify!($dweller), "s still requires some convolution.")]
         impl<'arena> core::ops::Deref for $dweller<'arena> {
             type Target = $payload<'arena>;
 
             #[inline]
+            /// This borrow lives up to `'arena`, but this cannot be expressed with the Deref
+            /// trait. Thus there may be moments when manually dereferencing is better/needed.
             fn deref(&self) -> &Self::Target {
                 &self.0.payload
             }

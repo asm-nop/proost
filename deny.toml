@@ -16,7 +16,7 @@ ignore = [
 ]
 
 [bans]
-multiple-versions = "deny"
+multiple-versions = "allow"
 
 [licenses]
 allow-osi-fsf-free = "both"

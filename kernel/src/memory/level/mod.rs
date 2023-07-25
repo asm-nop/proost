@@ -2,7 +2,7 @@
 
 use core::fmt::{Display, Formatter};
 use core::hash::Hash;
-use std::cell::OnceCell;
+use core::marker::PhantomData;
 
 use super::arena::Arena;
 
@@ -11,9 +11,12 @@ super::arena::new_dweller!(Level, Header, Payload);
 pub mod builder;
 
 /// The header of a level.
+#[derive(Default)]
 struct Header<'arena> {
-    /// The plus-form of a level.
-    plus_form: OnceCell<(Level<'arena>, usize)>,
+    /// The header of a level contains nothing so far.
+    /// It contained the "plus form" of a level before, but this is now basically redundant with the
+    /// `Add` constructor.
+    preserve: PhantomData<&'arena ()>,
 }
 
 /// A universe level.
@@ -27,7 +30,7 @@ pub enum Payload<'arena> {
     Zero,
 
     /// The successor of a level
-    Succ(Level<'arena>),
+    Add(Level<'arena>, u32),
 
     /// The maximum of two levels
     Max(Level<'arena>, Level<'arena>),
@@ -46,10 +49,7 @@ impl Display for Level<'_> {
             Some(n) => write!(f, "{n}"),
             None => match **self {
                 Zero => unreachable!("Zero is a numeral"),
-                Succ(_) => {
-                    let (u, n) = self.plus();
-                    write!(f, "({u} + {n})")
-                },
+                Add(u, n) => write!(f, "({u} + {n})"),
                 Max(n, m) => write!(f, "(max {n} {m})"),
                 IMax(n, m) => write!(f, "(imax {n} {m})"),
                 Var(n) => write!(f, "u{n}"),
@@ -58,7 +58,7 @@ impl Display for Level<'_> {
     }
 }
 
-use Payload::{IMax, Max, Succ, Var, Zero};
+use Payload::{Add, IMax, Max, Var, Zero};
 
 impl<'arena> Level<'arena> {
     /// This function is the base low-level function for creating levels.
@@ -66,27 +66,24 @@ impl<'arena> Level<'arena> {
     /// It enforces the uniqueness property of levels in the arena, as well as the reduced-form
     /// invariant.
     fn hashcons(payload: Payload<'arena>, arena: &mut Arena<'arena>) -> Self {
-        let new_node = Node {
-            payload,
-            header: Header {
-                plus_form: OnceCell::new(),
-            },
-        };
-
-        if let Some(level) = arena.hashcons_levels.get(&new_node) {
+        if let Some(level) = arena.hashcons_levels.get(&payload) {
             *level
         } else {
             // add the unreduced node to the arena
-            let node_unreduced = &*arena.alloc.alloc(new_node);
+            let node_unreduced = Node {
+                payload,
+                header: Header::default(),
+            };
+            let node_unreduced = &*arena.alloc.alloc(node_unreduced);
             let level_unreduced = Level::new(node_unreduced);
-            arena.hashcons_levels.insert(node_unreduced, level_unreduced);
+            arena.hashcons_levels.insert(&level_unreduced.0.payload, level_unreduced);
 
             // compute its reduced form
             let reduced = level_unreduced.normalize(arena);
 
             // supersede the previous correspondence
-            arena.hashcons_levels.insert(node_unreduced, reduced);
-            arena.hashcons_levels.insert(reduced.0, reduced);
+            arena.hashcons_levels.insert(&level_unreduced.0.payload, reduced);
+            arena.hashcons_levels.insert(&reduced.0.payload, reduced);
 
             reduced
         }
@@ -99,7 +96,12 @@ impl<'arena> Level<'arena> {
 
     /// Returns the successor of a level.
     pub(crate) fn succ(self, arena: &mut Arena<'arena>) -> Self {
-        Self::hashcons(Succ(self), arena)
+        Self::hashcons(Add(self, 1), arena)
+    }
+
+    /// Returns the level + n.
+    pub(crate) fn add(self, n: u32, arena: &mut Arena<'arena>) -> Self {
+        Self::hashcons(Add(self, n), arena)
     }
 
     /// Returns the level corresponding to the maximum of two levels.
@@ -117,44 +119,22 @@ impl<'arena> Level<'arena> {
         Self::hashcons(Var(id), arena)
     }
 
-    /// The addition of a level and an integer.
-    #[inline]
-    #[must_use]
-    pub fn add(self, n: usize, arena: &mut Arena<'arena>) -> Self {
-        if n == 0 {
-            self
-        } else {
-            let s = self.add(n - 1, arena);
-            s.succ(arena)
-        }
-    }
-
     /// Builds a level from an integer.
     #[inline]
     #[must_use]
-    pub fn from(n: usize, arena: &mut Arena<'arena>) -> Self {
+    pub fn from(n: u32, arena: &mut Arena<'arena>) -> Self {
         Level::zero(arena).add(n, arena)
     }
 
     /// Converts a level to an integer, if possible.
     #[inline]
     #[must_use]
-    pub fn to_numeral(self) -> Option<usize> {
-        let (u, n) = self.plus();
-        (*u == Zero).then_some(n)
-    }
-
-    /// Decomposes a level `l` in the best pair `(u, n)` s.t. `l = u + n`.
-    #[inline]
-    #[must_use]
-    pub fn plus(self) -> (Self, usize) {
-        *self.0.header.plus_form.get_or_init(|| match *self {
-            Succ(u) => {
-                let (u, n) = u.plus();
-                (u, n + 1)
-            },
-            _ => (self, 0),
-        })
+    pub fn to_numeral(self) -> Option<u32> {
+        match *self {
+            Zero => Some(0),
+            Add(u, n) => (*u == Zero).then_some(n),
+            _ => None,
+        }
     }
 
     /// Helper function for universe comparison. normalizes imax(es) as follows:
@@ -164,7 +144,7 @@ impl<'arena> Level<'arena> {
     ///  - `imax(u, imax(v, w)) = max(imax(u, w), imax(v, w))`
     ///  - `imax(u, max(v, w)) = max(imax(u, v), imax(u, w))`
     ///
-    /// The function also reduces `max`s. This is further helpful when trying to print the type.
+    /// The function also reduces `max`s and `add`s. This is further helpful when trying to print the type.
     ///
     /// Here, the imax normalization pushes imaxes to all have a `Var(i)` as the second argument. To solve this last case, one needs
     /// to substitute `Var(i)` with `0` and `S(Var(i))`. This gives us a consistent way to unstuck the geq-checking.
@@ -176,7 +156,7 @@ impl<'arena> Level<'arena> {
                 } else {
                     match *v {
                         Zero => v,
-                        Succ(_) => u.max(v, arena),
+                        Add(_, _k) => u.max(v, arena), // k > 0 by invariant
                         IMax(_, vw) => Level::max(u.imax(vw, arena), v, arena),
                         Max(vv, vw) => Level::max(u.imax(vv, arena), u.imax(vw, arena), arena),
                         _ => self,
@@ -191,11 +171,18 @@ impl<'arena> Level<'arena> {
                     match (&*u, &*v) {
                         (&Zero, _) => v,
                         (_, &Zero) => u,
-                        (&Succ(uu), &Succ(vv)) => Level::max(uu, vv, arena).succ(arena),
+                        (&Add(uu, k1), &Add(vv, k2)) => {
+                            let min = k1.min(k2);
+                            Level::max(uu.add(k1 - min, arena), vv.add(k2 - min, arena), arena).add(min, arena)
+                        },
                         _ => self,
                     }
                 }
             },
+
+            Add(u, 0) => u,
+            Add(u, k) if let Add(u, n) = *u => u.add(n + k, arena),
+
             _ => self,
         }
     }
@@ -206,7 +193,6 @@ mod pretty_printing {
 
     use crate::memory::arena::use_arena;
     use crate::memory::level::builder::raw::*;
-    use crate::memory::level::Level;
 
     #[test]
     fn to_num() {
@@ -215,13 +201,6 @@ mod pretty_printing {
             assert_eq!(arena.build_level_raw(max(succ(zero()), succ(var(0)))).to_numeral(), None);
             assert_eq!(arena.build_level_raw(imax(var(0), zero())).to_numeral(), Some(0));
             assert_eq!(arena.build_level_raw(imax(zero(), succ(zero()))).to_numeral(), Some(1));
-        });
-    }
-
-    #[test]
-    fn to_plus() {
-        use_arena(|arena| {
-            assert_eq!(arena.build_level_raw(succ(zero())).plus(), (Level::zero(arena), 1));
         });
     }
 
