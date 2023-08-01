@@ -1,6 +1,6 @@
 def myTrue := False -> False
 
-def id.{u} := fun A: Sort u, x: A => x
+def id.{u} := fun (A: Sort u) (x: A) => x
 
 def tt1: myTrue := id.{0} False
 

@@ -900,28 +900,28 @@ mod tests {
     #[test]
     fn successful_abs() {
         assert_eq!(
-            line("check fun w x: Prop, y z: Prop => x"),
+            line("check fun (w x: Prop) (y z: Prop) => x"),
             Ok(GetType(Builder::new(
-                Location::new((1, 7), (1, 36)),
+                Location::new((1, 7), (1, 39)),
                 Abs(
                     "w",
-                    Box::new(Builder::new(Location::new((1, 16), (1, 20)), Prop)),
+                    Box::new(Builder::new(Location::new((1, 17), (1, 21)), Prop)),
                     Box::new(Builder::new(
-                        Location::new((1, 7), (1, 36)),
+                        Location::new((1, 7), (1, 39)),
                         Abs(
                             "x",
-                            Box::new(Builder::new(Location::new((1, 16), (1, 20)), Prop)),
+                            Box::new(Builder::new(Location::new((1, 17), (1, 21)), Prop)),
                             Box::new(Builder::new(
-                                Location::new((1, 7), (1, 36)),
+                                Location::new((1, 7), (1, 39)),
                                 Abs(
                                     "y",
-                                    Box::new(Builder::new(Location::new((1, 27), (1, 31)), Prop)),
+                                    Box::new(Builder::new(Location::new((1, 29), (1, 33)), Prop)),
                                     Box::new(Builder::new(
-                                        Location::new((1, 7), (1, 36)),
+                                        Location::new((1, 7), (1, 39)),
                                         Abs(
                                             "z",
-                                            Box::new(Builder::new(Location::new((1, 27), (1, 31)), Prop)),
-                                            Box::new(Builder::new(Location::new((1, 35), (1, 36)), Var("x"))),
+                                            Box::new(Builder::new(Location::new((1, 29), (1, 33)), Prop)),
+                                            Box::new(Builder::new(Location::new((1, 38), (1, 39)), Var("x"))),
                                         ),
                                     )),
                                 ),
@@ -986,23 +986,23 @@ mod tests {
     #[test]
     fn context_for_abs_args() {
         assert_eq!(
-            line("check fun x : Prop, x : x, x : x => x"),
+            line("check fun (x : Prop) (x : x) (x : x) => x"),
             Ok(GetType(Builder::new(
-                Location::new((1, 7), (1, 38)),
+                Location::new((1, 7), (1, 42)),
                 Abs(
                     "x",
-                    Box::new(Builder::new(Location::new((1, 15), (1, 19)), Prop)),
+                    Box::new(Builder::new(Location::new((1, 16), (1, 20)), Prop)),
                     Box::new(Builder::new(
-                        Location::new((1, 7), (1, 38)),
+                        Location::new((1, 7), (1, 42)),
                         Abs(
                             "x",
-                            Box::new(Builder::new(Location::new((1, 25), (1, 26)), Var("x"))),
+                            Box::new(Builder::new(Location::new((1, 27), (1, 28)), Var("x"))),
                             Box::new(Builder::new(
-                                Location::new((1, 7), (1, 38)),
+                                Location::new((1, 7), (1, 42)),
                                 Abs(
                                     "x",
-                                    Box::new(Builder::new(Location::new((1, 32), (1, 33)), Var("x"))),
-                                    Box::new(Builder::new(Location::new((1, 37), (1, 38)), Var("x"))),
+                                    Box::new(Builder::new(Location::new((1, 35), (1, 36)), Var("x"))),
+                                    Box::new(Builder::new(Location::new((1, 41), (1, 42)), Var("x"))),
                                 ),
                             )),
                         ),
@@ -1012,75 +1012,20 @@ mod tests {
         );
 
         assert_eq!(
-            line("check fun x : Prop, x x : x => x"),
-            Ok(GetType(Builder::new(
-                Location::new((1, 7), (1, 33)),
-                Abs(
-                    "x",
-                    Box::new(Builder::new(Location::new((1, 15), (1, 19)), Prop)),
-                    Box::new(Builder::new(
-                        Location::new((1, 7), (1, 33)),
-                        Abs(
-                            "x",
-                            Box::new(Builder::new(Location::new((1, 27), (1, 28)), Var("x"))),
-                            Box::new(Builder::new(
-                                Location::new((1, 7), (1, 33)),
-                                Abs(
-                                    "x",
-                                    Box::new(Builder::new(Location::new((1, 27), (1, 28)), Var("x"))),
-                                    Box::new(Builder::new(Location::new((1, 32), (1, 33)), Var("x"))),
-                                ),
-                            )),
-                        ),
-                    )),
-                ),
-            )))
-        );
-
-        assert_eq!(
-            line("check fun x : Prop, y z : x => z"),
-            Ok(GetType(Builder::new(
-                Location::new((1, 7), (1, 33)),
-                Abs(
-                    "x",
-                    Box::new(Builder::new(Location::new((1, 15), (1, 19)), Prop)),
-                    Box::new(Builder::new(
-                        Location::new((1, 7), (1, 33)),
-                        Abs(
-                            "y",
-                            Box::new(Builder::new(Location::new((1, 27), (1, 28)), Var("x"))),
-                            Box::new(Builder::new(
-                                Location::new((1, 7), (1, 33)),
-                                Abs(
-                                    "z",
-                                    Box::new(Builder::new(Location::new((1, 27), (1, 28)), Var("x"))),
-                                    Box::new(Builder::new(Location::new((1, 32), (1, 33)), Var("z")))
-                                )
-                            )),
-                        )
-                    ))
-                )
-            )))
-        );
-    }
-
-    #[test]
-    fn context_for_dprod_args() {
-        assert_eq!(
-            line("check (x : Prop, x : x, x : x) -> x"),
+            line("check fun (x : Prop) (x x : x) => x"),
             Ok(GetType(Builder::new(
                 Location::new((1, 7), (1, 36)),
-                Prod(
+                Abs(
                     "x",
-                    Box::new(Builder::new(Location::new((1, 12), (1, 16)), Prop)),
+                    Box::new(Builder::new(Location::new((1, 16), (1, 20)), Prop)),
                     Box::new(Builder::new(
                         Location::new((1, 7), (1, 36)),
-                        Prod(
+                        Abs(
                             "x",
-                            Box::new(Builder::new(Location::new((1, 22), (1, 23)), Var("x"))),
+                            Box::new(Builder::new(Location::new((1, 29), (1, 30)), Var("x"))),
                             Box::new(Builder::new(
                                 Location::new((1, 7), (1, 36)),
-                                Prod(
+                                Abs(
                                     "x",
                                     Box::new(Builder::new(Location::new((1, 29), (1, 30)), Var("x"))),
                                     Box::new(Builder::new(Location::new((1, 35), (1, 36)), Var("x"))),
@@ -1093,23 +1038,52 @@ mod tests {
         );
 
         assert_eq!(
-            line("check (x : Prop, x x : x) -> x"),
+            line("check fun (x : Prop) (y z : x) => z"),
             Ok(GetType(Builder::new(
-                Location::new((1, 7), (1, 31)),
+                Location::new((1, 7), (1, 36)),
+                Abs(
+                    "x",
+                    Box::new(Builder::new(Location::new((1, 16), (1, 20)), Prop)),
+                    Box::new(Builder::new(
+                        Location::new((1, 7), (1, 36)),
+                        Abs(
+                            "y",
+                            Box::new(Builder::new(Location::new((1, 29), (1, 30)), Var("x"))),
+                            Box::new(Builder::new(
+                                Location::new((1, 7), (1, 36)),
+                                Abs(
+                                    "z",
+                                    Box::new(Builder::new(Location::new((1, 29), (1, 30)), Var("x"))),
+                                    Box::new(Builder::new(Location::new((1, 35), (1, 36)), Var("z")))
+                                )
+                            )),
+                        )
+                    ))
+                )
+            )))
+        );
+    }
+
+    #[test]
+    fn context_for_dprod_args() {
+        assert_eq!(
+            line("check (x : Prop) -> (x : x) -> (x : x) -> x"),
+            Ok(GetType(Builder::new(
+                Location::new((1, 7), (1, 44)),
                 Prod(
                     "x",
                     Box::new(Builder::new(Location::new((1, 12), (1, 16)), Prop)),
                     Box::new(Builder::new(
-                        Location::new((1, 7), (1, 31)),
+                        Location::new((1, 21), (1, 44)),
                         Prod(
                             "x",
-                            Box::new(Builder::new(Location::new((1, 24), (1, 25)), Var("x"))),
+                            Box::new(Builder::new(Location::new((1, 26), (1, 27)), Var("x"))),
                             Box::new(Builder::new(
-                                Location::new((1, 7), (1, 31)),
+                                Location::new((1, 32), (1, 44)),
                                 Prod(
                                     "x",
-                                    Box::new(Builder::new(Location::new((1, 24), (1, 25)), Var("x"))),
-                                    Box::new(Builder::new(Location::new((1, 30), (1, 31)), Var("x"))),
+                                    Box::new(Builder::new(Location::new((1, 37), (1, 38)), Var("x"))),
+                                    Box::new(Builder::new(Location::new((1, 43), (1, 44)), Var("x"))),
                                 ),
                             )),
                         ),
@@ -1119,23 +1093,49 @@ mod tests {
         );
 
         assert_eq!(
-            line("check (x : Prop, y z : x) -> z"),
+            line("check (x : Prop) -> (x x : x) -> x"),
             Ok(GetType(Builder::new(
-                Location::new((1, 7), (1, 31)),
+                Location::new((1, 7), (1, 35)),
                 Prod(
                     "x",
                     Box::new(Builder::new(Location::new((1, 12), (1, 16)), Prop)),
                     Box::new(Builder::new(
-                        Location::new((1, 7), (1, 31)),
+                        Location::new((1, 21), (1, 35)),
+                        Prod(
+                            "x",
+                            Box::new(Builder::new(Location::new((1, 28), (1, 29)), Var("x"))),
+                            Box::new(Builder::new(
+                                Location::new((1, 21), (1, 35)),
+                                Prod(
+                                    "x",
+                                    Box::new(Builder::new(Location::new((1, 28), (1, 29)), Var("x"))),
+                                    Box::new(Builder::new(Location::new((1, 34), (1, 35)), Var("x"))),
+                                ),
+                            )),
+                        ),
+                    )),
+                ),
+            )))
+        );
+
+        assert_eq!(
+            line("check (x : Prop) -> (y z : x) -> z"),
+            Ok(GetType(Builder::new(
+                Location::new((1, 7), (1, 35)),
+                Prod(
+                    "x",
+                    Box::new(Builder::new(Location::new((1, 12), (1, 16)), Prop)),
+                    Box::new(Builder::new(
+                        Location::new((1, 21), (1, 35)),
                         Prod(
                             "y",
-                            Box::new(Builder::new(Location::new((1, 24), (1, 25)), Var("x"))),
+                            Box::new(Builder::new(Location::new((1, 28), (1, 29)), Var("x"))),
                             Box::new(Builder::new(
-                                Location::new((1, 7), (1, 31)),
+                                Location::new((1, 21), (1, 35)),
                                 Prod(
                                     "z",
-                                    Box::new(Builder::new(Location::new((1, 24), (1, 25)), Var("x"))),
-                                    Box::new(Builder::new(Location::new((1, 30), (1, 31)), Var("z")))
+                                    Box::new(Builder::new(Location::new((1, 28), (1, 29)), Var("x"))),
+                                    Box::new(Builder::new(Location::new((1, 34), (1, 35)), Var("z")))
                                 )
                             )),
                         )
@@ -1148,28 +1148,28 @@ mod tests {
     #[test]
     fn parenthesis_in_abs() {
         assert_eq!(
-            line("check fun (((w x : Prop))), y z : Prop => x"),
+            line("check fun (((w x : Prop))) (y z : Prop) => x"),
             Ok(GetType(Builder::new(
-                Location::new((1, 7), (1, 44)),
+                Location::new((1, 7), (1, 45)),
                 Abs(
                     "w",
                     Box::new(Builder::new(Location::new((1, 20), (1, 24)), Prop)),
                     Box::new(Builder::new(
-                        Location::new((1, 7), (1, 44)),
+                        Location::new((1, 7), (1, 45)),
                         Abs(
                             "x",
                             Box::new(Builder::new(Location::new((1, 20), (1, 24)), Prop)),
                             Box::new(Builder::new(
-                                Location::new((1, 7), (1, 44)),
+                                Location::new((1, 7), (1, 45)),
                                 Abs(
                                     "y",
                                     Box::new(Builder::new(Location::new((1, 35), (1, 39)), Prop)),
                                     Box::new(Builder::new(
-                                        Location::new((1, 7), (1, 44)),
+                                        Location::new((1, 7), (1, 45)),
                                         Abs(
                                             "z",
                                             Box::new(Builder::new(Location::new((1, 35), (1, 39)), Prop)),
-                                            Box::new(Builder::new(Location::new((1, 43), (1, 44)), Var("x"))),
+                                            Box::new(Builder::new(Location::new((1, 44), (1, 45)), Var("x"))),
                                         ),
                                     )),
                                 ),

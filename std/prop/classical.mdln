@@ -25,8 +25,8 @@ def Implication_as_or: Prop := (P Q : Prop) -> (P -> Q) -> Or (Not P) Q
 def Peirce: Prop := (P Q: Prop) -> ((P -> Q) -> P) -> P
 
 // Lemmas (TODO: put in namespace when that works)
-def excluded_middle_implies_double_negation_elimination: (Excluded_middle -> Double_negation_elimination) :=
-  fun excl : Excluded_middle, P: Prop, notnotP : (Not (Not P)) =>
+def excluded_middle_implies_double_negation_elimination (excl: Excluded_middle) : Double_negation_elimination :=
+  fun (P: Prop) (notnotP: Not (Not P)) =>
     (excl P) // Apply P \/ ~P
       P // ... to prove P
       (fun p: P => p) // P case: P -> P is trivial
@@ -34,21 +34,21 @@ def excluded_middle_implies_double_negation_elimination: (Excluded_middle -> Dou
       (fun notP: (Not P) =>
         (exfalso P (notnotP notP)))
 
-def double_negation_elimination_implies_implication_as_or: (Double_negation_elimination -> Implication_as_or) :=
-  (fun elim: Double_negation_elimination, P Q: Prop, PtoQ : (P -> Q) =>
+def double_negation_elimination_implies_implication_as_or (elim: Double_negation_elimination) : Implication_as_or :=
+  fun (P Q: Prop) (PtoQ : P -> Q) =>
     elim (Or (Not P) Q) // Prove ~P \/ Q by ~~(~P \/ Q)
       (fun H: Not (Or (Not P) Q) => // Assume ~(~P \/ Q) and prove False
-        (fun p : P, qf: Not Q => qf (PtoQ p)) // From lemmas P and ~Q, prove False by P, P -> Q, Q -> False
+        (fun (p: P) (qf: Not Q) => qf (PtoQ p)) // From lemmas P and ~Q, prove False by P, P -> Q, Q -> False
         (elim P // Prove P by ~~P
           (fun HP: (Not P) => // Assume ~P, prove False
             H (or_intro_l (Not P) Q HP))) // Deduce False from ~(~P \/ Q)
         (fun q : Q => // Assume Q, prove False.
-          H (or_intro_r (Not P) Q q)))) // Deduce False from ~(~P \/ Q)
+          H (or_intro_r (Not P) Q q))) // Deduce False from ~(~P \/ Q)
 
-def implication_as_or_implies_excluded_middle: Implication_as_or -> Excluded_middle :=
-  (fun imp2or : Implication_as_or, P: Prop => // Let's prove ~P \/ P
+def implication_as_or_implies_excluded_middle (imp2or: Implication_as_or) : Excluded_middle :=
+  fun P: Prop => // Let's prove ~P \/ P
     or_comm (Not P) P // Trivially follows from P \/ ~P
-      (imp2or P P (fun p: P => p))) // P -> P, therefore ~P \/ P
+      (imp2or P P (fun p: P => p)) // P -> P, therefore ~P \/ P
 
 // Boilerplate: deduce (1) <=> (2) from (1) => (2) => (3) => (1)
 def excluded_middle_iff_double_negation_elimination: Iff Excluded_middle Double_negation_elimination :=
@@ -70,8 +70,8 @@ def excluded_middle_iff_implication_as_or: Iff Excluded_middle Implication_as_or
         (excluded_middle_implies_double_negation_elimination excl))
      implication_as_or_implies_excluded_middle)
 
-def excluded_middle_implies_peirce: Excluded_middle -> Peirce :=
-  (fun excl: Excluded_middle, P Q: Prop, H: ((P -> Q) -> P) =>
+def excluded_middle_implies_peirce (excl: Excluded_middle) : Peirce :=
+  fun (P Q: Prop) (H: (P -> Q) -> P) =>
     (excl P) // Eliminate from P \/ ~P
       P // To prove P
       (fun p: P => p) // P -> P is trivial
@@ -81,10 +81,10 @@ def excluded_middle_implies_peirce: Excluded_middle -> Peirce :=
           // Need to prove P -> Q
           (fun p: P =>
             // We have P and ~P, we can prove anything.
-            exfalso Q (nP p))))
+            exfalso Q (nP p)))
 
-def peirce_implies_excluded_middle: Peirce -> Excluded_middle :=
-  (fun peirce: Peirce, P: Prop =>
+def peirce_implies_excluded_middle (peirce: Peirce) : Excluded_middle :=
+  fun P: Prop =>
     // Specialize Peirce's law:
     // (((P \/ ~P) -> False) -> (P \/ ~P)) -> (P \/ ~P)
     // Thus we can prove P \/ ~P by
@@ -97,7 +97,7 @@ def peirce_implies_excluded_middle: Peirce -> Excluded_middle :=
           (fun p: P => // Assume P, deduce False
             // We know P \/ ~P -> False, and we can prove
             // P \/ ~P with P.
-            H (or_intro_l P (Not P) p))))
+            H (or_intro_l P (Not P) p)))
 
 // Boilerplate: deduce (1) <=> (4) from (1) => (4) => (1)
 def excluded_middle_iff_peirce: Iff Excluded_middle Peirce :=

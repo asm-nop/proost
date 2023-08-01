@@ -8,28 +8,27 @@ keywords = @{ ( "fun" | "def" | "check" | "eval" | "search" | "import" | "Prop" 
 eoi = _{ !ANY }
 
 
+simple_term = _{ VarDecl | Var | Prop | Type | Sort | "(" ~ Term ~ ")" }
+Term = _{ Abs | dProd | Prod | App | simple_term }
+term_prod = _{ App | Abs | dProd | simple_term }
+term_app = _{ Abs | simple_term } 
 
-Term = _{ Abs | dProd | Prod | App | VarDecl | Var | Prop | Type | Sort | "(" ~ Term ~ ")" }
-term_prod = _{ App | Abs | dProd | VarDecl | Var | Prop | Type | Sort | "(" ~ Prod ~ ")" | "(" ~ term_prod ~ ")" }
-term_app = _{ Abs | VarDecl | Var | Prop | Type | Sort | "(" ~ App ~ ")" | "(" ~ Prod ~ ")" | "(" ~ dProd ~ ")" | "(" ~ term_app ~ ")" } 
-term_dprod = _{ App | Abs | Prod | dProd | VarDecl | Var | Prop | Type | Sort | "(" ~ term_dprod ~ ")" }
-term_abs = _{ App | Abs | Prod | dProd | VarDecl | Var | Prop | Type | Sort | "(" ~ term_abs ~ ")" }
 
-Abs = { ( "fun" ~ ( arg_abs_par ~ ( "," ~ arg_abs_par )* ) ~ "=>" ~ Term ) }
-arg_abs_par = _{ arg_abs | "(" ~ arg_abs_par ~ ")" }
-arg_abs = { (wildcard | string)+ ~ ":" ~ term_abs }
+arg = { (wildcard | string)+ ~ ":" ~ Term }
+arg_par = _{ arg | "(" ~ arg_par ~ ")" }
 
-dProd = { "(" ~ ( arg_dprod_par ~ ( "," ~ arg_dprod_par )* ) ~ ")" ~ "->" ~ Term }
-arg_dprod_par = _{ arg_dprod | "(" ~ arg_dprod_par ~ ")" }
-arg_dprod = { (wildcard | string)+ ~ ":" ~ term_dprod }
+Args = { ("(" ~ arg_par ~ ")")* }
+ArgsParOpt = _{ ("(" ~ arg_par ~ ")")+ | arg_par }
 
+Abs = { ( "fun" ~ ArgsParOpt ~ "=>" ~ Term ) }
+dProd = { "(" ~ arg_par ~ ")" ~ "->" ~ Term }
 App = { term_app ~ term_app+ }
 Prod = { term_prod ~ ( "->" ~ term_prod )+ }
-Prop = { "Prop" }
 
+Prop = { "Prop" }
 Type = { "Type" ~ univ? }
 Sort = { "Sort" ~ univ? }
-univ = _{ Plus | Max | IMax | Num | string | "(" ~ univ ~ ")" }
+univ = _{ Plus | univ_plus }
 univ_plus = _{ Max | IMax | Num | string | "(" ~ univ ~ ")" }
 Num = { number }
 Plus = { univ_plus ~ ( "+" ~ number )+ }
@@ -43,8 +42,6 @@ stringDecl = ${ string ~ univ_decl }
 arg_univ = !{".{" ~ (univ ~ ("," ~ univ)* )? ~ "}"}
 univ_decl = !{".{" ~ (string ~ ("," ~ string)* )? ~ "}"}
 
-Args = { (arg)* }
-arg = { "(" ~ (wildcard | string)+ ~ ":" ~ Term ~ ")"}
 
 Command = _{ Define | Declaration | DeclarationCheckType | CheckType | GetType | DefineCheckType | Eval | ImportFile | Search}
 Define = { "def" ~ string ~ Args ~ ":=" ~ Term }
@@ -56,5 +53,6 @@ GetType = { "check" ~ Term }
 Eval = { "eval" ~ Term }
 ImportFile = { "import" ~ filename* }
 Search = { "search" ~ string }
+
 command = _{SOI ~ Command ~ eoi }
 file = _{ SOI ~ Command* ~ eoi }
