@@ -13,11 +13,7 @@ use crate::lsp::{connection, LanguageServer};
 impl<C: connection::LanguageServer> LanguageServer for Tilleul<'_, '_, C> {
     fn initialize(&mut self, _: InitializeParams) -> InitializeResult {
         InitializeResult {
-            capabilities: ServerCapabilities {
-                definition_provider: Some(OneOf::Left(true)),
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
-                ..ServerCapabilities::default()
-            },
+            capabilities: ServerCapabilities::default(),
             server_info: Some(ServerInfo {
                 name: crate::NAME.to_owned(),
                 version: Some(crate::VERSION.to_owned()),
