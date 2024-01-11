@@ -199,7 +199,7 @@ impl<'arena> Evaluator {
     ) -> ResultProcess<'arena, 'build> {
         match *command {
             Command::Define((location, s), ref type_builder, ref term_builder) => {
-                if arena.get_binding(s).is_some() {
+                if arena.get_binding(s).is_some() || arena.get_binding_decl(s).is_some() {
                     return Err(TopLevel(Error {
                         kind: ErrorKind::BoundVariable(s.to_owned()),
                         location,
@@ -221,7 +221,7 @@ impl<'arena> Evaluator {
             },
 
             Command::Declaration((location, s), ref type_builder, ref decl_builder) => {
-                if arena.get_binding_decl(s).is_some() {
+                if arena.get_binding_decl(s).is_some() || arena.get_binding(s).is_some() {
                     return Err(TopLevel(Error {
                         kind: ErrorKind::BoundVariable(s.to_owned()),
                         location,
