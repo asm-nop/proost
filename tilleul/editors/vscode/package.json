@@ -1,0 +1,76 @@
+{
+    "name": "proost-lsp",
+    "displayName": "Proost LSP",
+    "description": "A LSP client of proost for VSCode",
+    "version": "0.3.0",
+    "license": "GPL-3.0-or-later",
+    "repository": {
+        "type": "git",
+        "url": "https://gitlab.crans.org/loutr/proost"
+    },
+    "author": "proost contributors",
+    "engines": {
+        "vscode": "^1.83.1"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "configuration": {
+            "title": "Proost LSP",
+            "properties": {
+                "proost-lsp.serverPath": {
+                    "title": "Path to the server executable",
+                    "description": "This extension needs a proost LSP server to run. This setting controls the path to the executable.",
+                    "type": "string",
+                    "default": "tilleul"
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "proost-lsp.restartServer",
+                "title": "Restart Proost LSP Server"
+            }
+        ],
+        "languages": [
+            {
+                "id": "madelaine",
+                "aliases": [
+                    "Madelaine"
+                ],
+                "extensions": [
+                    ".mdln"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "madelaine",
+                "scopeName": "source.madelaine",
+                "path": "./syntaxes/madelaine.tmLanguage.json"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc",
+        "watch": "tsc -watch",
+        "lint": "eslint src --ext .ts"
+    },
+    "dependencies": {
+        "vscode-languageclient": "^9"
+    },
+    "devDependencies": {
+        "typescript": "^5",
+        "@types/node": "^20",
+        "@types/vscode": "^1",
+
+        "eslint": "^8",
+        "@typescript-eslint/eslint-plugin": "^6",
+        "@typescript-eslint/parser": "^6"
+    }
+
+}

@@ -1,0 +1,17 @@
+{
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/all"
+    ],
+    "parserOptions": {
+        "project": true
+    },
+    "rules": {
+        "@typescript-eslint/prefer-readonly-parameter-types": "off"
+    }
+}

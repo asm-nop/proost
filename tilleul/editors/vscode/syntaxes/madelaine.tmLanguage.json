@@ -1,0 +1,39 @@
+{
+	"name": "madelaine",
+	"scopeName": "source.madelaine",
+	"fileTypes": [],
+	"patterns": [
+		{
+			"include": "#markup"
+		}
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.double-slash.madelaine",
+					"begin": "\/\/",
+					"end": "$"
+				}
+			]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.numeric.madelaine",
+					"match": "[0-9]+"
+				},
+				{
+					"name": "constant.language.madelaine",
+					"match": "(Prop|Sort|Type|def|fun|check|eval|search|import)"
+				}
+			]
+		},
+		"markup": {
+			"patterns": [
+				{ "include": "#comments" },
+				{ "include": "#constants" }
+			]
+		}
+	}
+}
