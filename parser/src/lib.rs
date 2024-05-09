@@ -3,7 +3,6 @@
 //! Fast parser for λ-terms and commands using pest.
 //! Provides functions to parse files and single commands.
 
-#![feature(box_syntax)]
 #![feature(result_flattening)]
 #![deny(
     clippy::complexity,
@@ -16,29 +15,32 @@
     clippy::suspicious
 )]
 #![allow(
+    clippy::absolute_paths,
     clippy::arithmetic_side_effects,
     clippy::blanket_clippy_restriction_lints,
     clippy::else_if_without_else,
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
     clippy::implicit_return,
-    clippy::integer_arithmetic,
     clippy::match_same_arms,
     clippy::match_wildcard_for_single_variants,
+    clippy::min_ident_chars,
     clippy::missing_trait_methods,
     clippy::mod_module_files,
     clippy::panic_in_result_fn,
+    clippy::pub_use,
+    clippy::question_mark_used,
+    clippy::ref_patterns,
+    clippy::self_named_module_files,
     clippy::separated_literal_suffix,
     clippy::shadow_reuse,
     clippy::shadow_unrelated,
-    clippy::unreachable,
-    clippy::wildcard_enum_match_arm,
-    // Due to pest dependency
-    clippy::self_named_module_files,
-    clippy::pub_use,
+    clippy::single_call_fn,
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core,
-    clippy::unwrap_used
+    clippy::unreachable,
+    clippy::unwrap_used,
+    clippy::wildcard_enum_match_arm
 )]
 #![cfg_attr(
     test,

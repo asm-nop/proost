@@ -6,9 +6,9 @@
 //! provides essential manipulation functions from lambda-calculus, while the [`type_checker`]
 //! module provides typed interactions.
 
+#![feature(coverage_attribute)]
 #![feature(if_let_guard)]
-#![feature(no_coverage)]
-#![feature(once_cell)]
+#![feature(once_cell_try)]
 #![feature(trait_alias)]
 #![feature(type_alias_impl_trait)]
 #![deny(
@@ -23,21 +23,25 @@
 )]
 #![allow(
     clippy::arithmetic_side_effects,
+    clippy::absolute_paths,
     clippy::blanket_clippy_restriction_lints,
     clippy::else_if_without_else,
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
     clippy::implicit_return,
-    clippy::integer_arithmetic,
     clippy::match_same_arms,
     clippy::match_wildcard_for_single_variants,
+    clippy::min_ident_chars,
     clippy::missing_trait_methods,
     clippy::mod_module_files,
     clippy::panic_in_result_fn,
     clippy::pattern_type_mismatch,
+    clippy::pub_with_shorthand,
+    clippy::question_mark_used,
     clippy::separated_literal_suffix,
     clippy::shadow_reuse,
     clippy::shadow_unrelated,
+    clippy::single_call_fn,
     clippy::unreachable,
     clippy::wildcard_enum_match_arm
 )]

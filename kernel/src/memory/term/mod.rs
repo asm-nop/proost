@@ -2,7 +2,7 @@
 //!
 //! This module defines the core functions used to create and manipulate terms.
 
-use std::cell::OnceCell;
+use core::cell::OnceCell;
 
 use derive_more::{Add, Display, From, Into, Sub};
 
@@ -99,7 +99,7 @@ impl<'arena> Term<'arena> {
     }
 
     /// Returns a variable term with the given index and type.
-    pub(crate) fn var(index: DeBruijnIndex, type_: Term<'arena>, arena: &mut Arena<'arena>) -> Self {
+    pub(crate) fn var(index: DeBruijnIndex, type_: Self, arena: &mut Arena<'arena>) -> Self {
         let header = Header::new(false);
         let payload = Var(index, type_);
 

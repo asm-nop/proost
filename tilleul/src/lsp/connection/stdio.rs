@@ -45,7 +45,7 @@ impl Stdio {
     }
 
     /// Reader thread function.
-    #[no_coverage]
+    #[coverage(off)]
     fn reader_thread<R: std::io::Read>(sender: &Sender<Message>, mut reader: BufReader<R>) {
         info!("Reader thread started");
 
@@ -67,7 +67,7 @@ impl Stdio {
     }
 
     /// Writer thread function.
-    #[no_coverage]
+    #[coverage(off)]
     fn writer_thread<W: std::io::Write>(receiver: &Receiver<Message>, mut writer: BufWriter<W>) {
         info!("Writer thread started");
 
@@ -122,16 +122,16 @@ mod tests {
 
         let (reader_sender, receiver) = unbounded::<Message>();
 
-        let thread = Some(thread::spawn(move || {
+        let thread = thread::spawn(move || {
             let reader = BufReader::new(&data[..]);
 
             Stdio::reader_thread(&reader_sender, reader);
-        }));
+        });
 
         let msg = receiver.recv().unwrap();
 
         assert_eq!(msg, Message::Notification(Notification::new::<lsp_types::notification::Initialized>(InitializedParams {})));
-        assert!(thread.unwrap().join().is_ok());
+        assert!(thread.join().is_ok());
     }
 
     #[test]
@@ -140,14 +140,14 @@ mod tests {
 
         let (reader_sender, receiver) = unbounded::<Message>();
 
-        let thread = Some(thread::spawn(move || {
+        let thread = thread::spawn(move || {
             let reader = BufReader::new(&data[..]);
 
             Stdio::reader_thread(&reader_sender, reader);
-        }));
+        });
 
         assert_eq!(receiver.recv().unwrap_err(), RecvError);
-        assert!(thread.unwrap().join().is_ok());
+        assert!(thread.join().is_ok());
     }
 
     #[test]
@@ -156,14 +156,14 @@ mod tests {
 
         let (reader_sender, receiver) = unbounded::<Message>();
 
-        let thread = Some(thread::spawn(move || {
+        let thread = thread::spawn(move || {
             let reader = BufReader::new(&data[..]);
 
             Stdio::reader_thread(&reader_sender, reader);
-        }));
+        });
 
         assert_eq!(receiver.recv().unwrap_err(), RecvError);
-        assert!(thread.unwrap().join().is_ok());
+        assert!(thread.join().is_ok());
     }
 
     #[test]

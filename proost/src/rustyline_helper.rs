@@ -80,10 +80,13 @@ impl Validator for RustyLineHelper {
 fn validate_arrows(input: &str) -> Option<ValidationResult> {
     let mut iter = input.as_bytes().iter().rev();
 
-    if let Some(b) = iter.find(|b| !(**b).is_ascii_whitespace()) &&
-       *b == b'>' && let Some(b) = iter.next() && (*b == b'-' || *b == b'=') {
-            return Some(ValidationResult::Incomplete)
-        }
+    if let Some(b) = iter.find(|b| !(**b).is_ascii_whitespace())
+        && *b == b'>'
+        && let Some(b) = iter.next()
+        && (*b == b'-' || *b == b'=')
+    {
+        return Some(ValidationResult::Incomplete);
+    }
 
     None
 }
@@ -120,7 +123,7 @@ impl Highlighter for RustyLineHelper {
         Owned(format!("{}", hint.bright_black()))
     }
 
-    fn highlight_char(&self, _line: &str, _pos: usize) -> bool {
+    fn highlight_char(&self, _line: &str, _pos: usize, _forced: bool) -> bool {
         self.color
     }
 
@@ -131,10 +134,11 @@ impl Highlighter for RustyLineHelper {
         let mut copy = line.to_owned();
 
         if let Some((bracket, pos)) = get_bracket(line, pos)
-            && let Some((matching, pos)) = find_matching_bracket(line, pos, bracket) {
-                let s = String::from(matching);
-                copy.replace_range(pos..=pos, &format!("{}", s.blue().bold()));
-            }
+            && let Some((matching, pos)) = find_matching_bracket(line, pos, bracket)
+        {
+            let s = String::from(matching);
+            copy.replace_range(pos..=pos, &format!("{}", s.blue().bold()));
+        }
         KEYWORDS
             .iter()
             .for_each(|keyword| replace_inplace(&mut copy, keyword, &format!("{}", keyword.blue().bold())));

@@ -183,7 +183,7 @@ impl<'arena> Evaluator {
                     .into()
                 })
             })
-            .map(|_| None)
+            .map(|()| None)
     }
 
     /// Processes a command.
@@ -256,6 +256,7 @@ impl<'arena> Evaluator {
                 Ok(term.infer(arena).map(Some).map_err(|err| Kernel(term_builder, err))?)
             },
 
+            #[allow(clippy::let_underscore_untyped)]
             Command::Eval(ref term_builder) => {
                 let term = term_builder.realise(arena).map_err(|err| Kernel(term_builder, err))?;
                 let _ = term.infer(arena).map_err(|err| Kernel(term_builder, err))?;
@@ -272,7 +273,7 @@ impl<'arena> Evaluator {
 
                     self.import_file(arena, loc, &file_path, importing)
                 })
-                .map(|_| None),
+                .map(|()| None),
         }
     }
 }

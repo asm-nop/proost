@@ -48,7 +48,7 @@ impl<'dispatcher, S: LanguageServer, C: connection::Server> Dispatcher<'dispatch
     /// Dispatches the [`Request`] to the [`LanguageServer`], if the associated method corresponds to
     /// [`lsp_types::request::Request::METHOD`].
     #[allow(dead_code)]
-    #[no_coverage]
+    #[coverage(off)]
     pub fn handle<R>(&mut self, closure: fn(&mut S, R::Params) -> R::Result) -> &mut Self
     where
         R: lsp_types::request::Request,
@@ -59,13 +59,15 @@ impl<'dispatcher, S: LanguageServer, C: connection::Server> Dispatcher<'dispatch
     /// Like [`handle`], but also accepts a callback to be executed after the request has been handled.
     ///
     /// [`handle`]: (Dispatcher::handle)
-    #[no_coverage]
+    #[coverage(off)]
     pub fn handle_callback<R, F>(&mut self, handler: fn(&mut S, R::Params) -> R::Result, callback: F) -> &mut Self
     where
         F: FnOnce(&R::Result),
         R: lsp_types::request::Request,
     {
-        let Some(ref request) = self.request else { return self; };
+        let Some(ref request) = self.request else {
+            return self;
+        };
 
         if request.method != R::METHOD {
             return self;
@@ -98,9 +100,11 @@ impl<'dispatcher, S: LanguageServer, C: connection::Server> Dispatcher<'dispatch
     /// This function should be used at the end of the [`handle`]-like methods chain.
     ///
     /// [`handle`]: (Dispatcher::handle)
-    #[no_coverage]
-    pub fn handle_fallthrough(&mut self, error_response: Error) {
-        let Some(ref request) = self.request else { return; };
+    #[coverage(off)]
+    pub fn handle_fallthrough(&self, error_response: Error) {
+        let Some(ref request) = self.request else {
+            return;
+        };
 
         warn!("{} on {}", error_response.message, request.method);
 

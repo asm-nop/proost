@@ -1,99 +1,100 @@
 {
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs.url = "nixpkgs/nixos-23.11";
 
-    devshell = {
-      url = "github:numtide/devshell";
-      inputs = {
-        flake-utils.follows = "flake-utils";
-        nixpkgs.follows = "nixpkgs";
-      };
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs = {
-        flake-utils.follows = "flake-utils";
-        nixpkgs.follows = "nixpkgs";
-      };
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, devshell, flake-utils, rust-overlay, nixpkgs }:
+  outputs = { self, crane, fenix, flake-utils, nixpkgs, }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ devshell.overlay (import rust-overlay) ];
+        overlays = [ fenix.overlays.default ];
         pkgs = import nixpkgs { inherit overlays system; };
-        rust = pkgs.rust-bin.nightly.latest;
+
+        toolchain = pkgs.fenix.fromToolchainFile {
+          file = ./rust-toolchain.toml;
+          sha256 = "sha256-6lRcCTSUmWOh0GheLMTZkY7JC273pWLp2s98Bb2REJQ=";
+        };
+
+        rust = (crane.mkLib pkgs).overrideToolchain toolchain;
+
+        proost = {
+          args = {
+            src = ./.;
+            pname = "proost";
+            version = "0.3.0";
+
+            env = {
+              CARGO_PROFILE = "test";
+            };
+          };
+
+          cargoArtifacts = rust.buildDepsOnly proost.args;
+        };
       in rec {
         packages = {
-          default = pkgs.rustPlatform.buildRustPackage {
-            pname = "proost";
-            version = "0.1.0";
+          default = packages.proost;
 
-            nativeBuildInputs = [ rust.minimal ];
+          doc = rust.cargoDoc (proost.args // {
+            cargoDenyChecks = "all";
+            cargoDocExtraArgs = "--document-private-items --no-deps";
+          });
 
-            src = ./.;
-            cargoLock.lockFile = ./Cargo.lock;
-
+          proost = rust.buildPackage (proost.args // {
+            cargoArtifacts = proost.cargoArtifacts;
             meta = with pkgs.lib; {
               description = "A simple proof assistant written in Rust";
               homepage = "https://gitlab.crans.org/loutr/proost";
               license = licenses.gpl3;
             };
-          };
-
-          docker-ci = let
-            rust-ci = rust.minimal.override { extensions = [ "clippy" "rustfmt" ]; };
-          in pkgs.dockerTools.buildImage {
-            name = "proost-ci";
-
-            config.Entrypoint = [ "${pkgs.dockerTools.binSh}/bin/sh" "-c" ];
-
-            copyToRoot = pkgs.buildEnv {
-              name = "proost-dependencies";
-              paths = (with pkgs; [ cargo-deny coreutils gcc gnugrep gnused grcov lcov libxslt openssh rsync ])
-                ++ (with pkgs.dockerTools; [ binSh caCertificates fakeNss ]) ++ [ rust-ci ];
-              pathsToLink = [ "/bin" "/etc" ];
-            };
-
-            runAsRoot = "mkdir /tmp";
-          };
+          });
         };
 
-        devShell = let
-          rust-dev = rust.default.override { extensions = [ "rust-src" "rust-analyzer" ]; };
-        in pkgs.devshell.mkShell {
-          name = "proost";
+        checks = {
+          proost = packages.proost;
 
-          commands = [{
-            name = "coverage";
-            command = let 
-              excl_enum_struct = "^([[:space:]]*)(pub |pub(([[:alpha:]]|[[:space:]]|[:])+) )?(enum|struct) ";
-              excl_enum_fn_struct = "^([[:space:]]*)(pub |pub(([[:alpha:]]|[[:space:]]|[:])+) )?(enum|fn|struct) ";
-              excl_line = "//!|#\\[|use|unreachable!|^\\}$|${excl_enum_struct}";
-              excl_start = "${excl_enum_struct}";
-              excl_stop = "^\\}$";
-              excl_br_line = "#\\[|assert(_eq)?!|(error|warn|info|debug|trace)!|^[[:space:]]*\\}(,)?$|${excl_enum_fn_struct}";
-              excl_br_start = "#\\[no_coverage\\]|^mod tests \\{|${excl_enum_struct}";
-              excl_br_stop = "^\\}$";
-              env = "CARGO_INCREMENTAL=0"
-                  + " RUSTFLAGS=\"-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort\""
-                  + " RUSTDOCFLAGS=\"-Cpanic=abort\"";
-            in ''
-              ${env} cargo test
-              grcov . -s . -b ./target/debug/ --branch --llvm --ignore '*cargo*' --ignore-not-existing \
-                  --excl-line "${excl_line}" --excl-start "${excl_start}" --excl-stop "${excl_stop}" \
-                  --excl-br-line "${excl_br_line}" --excl-br-start "${excl_br_start}" --excl-br-stop "${excl_br_stop}" \
-                  -o ./target/coverage.lcov --log /dev/null || true
-              find target \( -name "*.gcda" -or -name "*.gcno" \) -delete
-              genhtml --branch --no-function-coverage --precision 2 target/coverage.lcov -o coverage
+          clippy = rust.cargoClippy (proost.args // {
+            cargoArtifacts = proost.cargoArtifacts;
+            cargoClippyExtraArgs = "--all-targets --all-features --no-deps";
+          });
+
+          deny = rust.cargoDeny (proost.args // {
+            cargoDenyChecks = "all";
+          });
+
+          fmt = rust.cargoFmt proost.args;
+        } // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
+          coverage = let
+            llvmCovArgs = "--ignore-filename-regex nix/store --locked --frozen --offline --profile test";
+          in rust.buildPackage (proost.args // {
+            pnameSuffix = "-coverage";
+            cargoArtifacts = proost.cargoArtifacts;
+
+            nativeBuildInputs = [ pkgs.cargo-llvm-cov ];
+
+            buildPhaseCargoCommand = ''
+              cargo llvm-cov test --workspace --no-report ${llvmCovArgs}
+              cargo llvm-cov report --html --output-dir $out ${llvmCovArgs}
+              cargo llvm-cov report --cobertura --output-path $out/cobertura.xml ${llvmCovArgs}
+              cargo llvm-cov report --json --output-path $out/coverage.json ${llvmCovArgs}
             '';
-            help = "Launch tests and generate HTML coverage website";
-          }];
+            installPhaseCommand = "true";
 
-          packages = with pkgs; [ cargo-deny grcov lcov rust-dev ];
+            doCheck = false;
+          });
         };
+
+        devShells.default = rust.devShell { checks = self.checks.${system}; };
+
+        formatter = pkgs.nixfmt;
       });
 }

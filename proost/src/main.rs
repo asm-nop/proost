@@ -16,30 +16,35 @@
     clippy::suspicious
 )]
 #![allow(
+    clippy::absolute_paths,
     clippy::arithmetic_side_effects,
     clippy::blanket_clippy_restriction_lints,
     clippy::else_if_without_else,
+    clippy::error_impl_error,
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
     clippy::implicit_return,
-    clippy::integer_arithmetic,
+    clippy::indexing_slicing,
+    clippy::let_underscore_must_use,
+    clippy::let_underscore_untyped,
     clippy::match_same_arms,
     clippy::match_wildcard_for_single_variants,
+    clippy::min_ident_chars,
     clippy::missing_trait_methods,
     clippy::mod_module_files,
     clippy::panic_in_result_fn,
     clippy::pattern_type_mismatch,
+    clippy::print_stdout,
+    clippy::question_mark_used,
+    clippy::ref_patterns,
     clippy::separated_literal_suffix,
     clippy::shadow_reuse,
     clippy::shadow_unrelated,
-    clippy::unreachable,
-    clippy::wildcard_enum_match_arm,
-    // Allowed because of the `clap` crate
+    clippy::single_call_fn,
     clippy::std_instead_of_core,
-    // Allowed because this crate is a binary manipulating string
-    clippy::indexing_slicing,
-    clippy::print_stdout,
-    clippy::string_slice
+    clippy::string_slice,
+    clippy::unreachable,
+    clippy::wildcard_enum_match_arm
 )]
 #![cfg_attr(
     test,
@@ -62,8 +67,8 @@ mod rustyline_helper;
 
 use std::cmp::max;
 use std::env::current_dir;
+use std::io::IsTerminal;
 
-use atty::Stream;
 use clap::Parser;
 use colored::Colorize;
 use elaboration::location::Location;
@@ -113,7 +118,7 @@ fn main() -> Result<'static, 'static, ()> {
     }
 
     // check if we are in a terminal
-    if atty::isnt(Stream::Stdout) || atty::isnt(Stream::Stdin) {
+    if !(std::io::stdin().is_terminal() && std::io::stdout().is_terminal()) {
         return Ok(());
     }
 
@@ -131,7 +136,7 @@ fn main() -> Result<'static, 'static, ()> {
             let readline = rl.readline("\u{00BB} ");
             match readline {
                 Ok(line) if is_command(&line) => {
-                    rl.add_history_entry(line.as_str());
+                    let _ = rl.add_history_entry(line.as_str());
 
                     match command::parse::line(line.as_str()) {
                         Ok(command) => display(evaluator.process_line(arena, &command), true),

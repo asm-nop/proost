@@ -26,7 +26,7 @@ pub enum Error<'arena, 'build> {
     /// An input/output error (see [`std::io::Error`]).
     Io(std::io::Error),
 
-    /// A RustyLine error (see [`rustyline::error::ReadlineError`]).
+    /// A `RustyLine` error (see [`rustyline::error::ReadlineError`]).
     RustyLine(rustyline::error::ReadlineError),
 }
 

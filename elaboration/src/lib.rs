@@ -9,6 +9,7 @@
 //! This crate also defines locations (understand: locations of written terms within an input
 //! text), which can be embedded within a builder.
 
+#![feature(impl_trait_in_assoc_type)]
 #![deny(
     clippy::complexity,
     clippy::correctness,
@@ -20,19 +21,22 @@
     clippy::suspicious
 )]
 #![allow(
+    clippy::absolute_paths,
     clippy::arithmetic_side_effects,
     clippy::blanket_clippy_restriction_lints,
     clippy::else_if_without_else,
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
     clippy::implicit_return,
-    clippy::integer_arithmetic,
     clippy::match_same_arms,
     clippy::match_wildcard_for_single_variants,
+    clippy::min_ident_chars,
     clippy::missing_trait_methods,
     clippy::mod_module_files,
     clippy::panic_in_result_fn,
     clippy::pattern_type_mismatch,
+    clippy::question_mark_used,
+    clippy::ref_patterns,
     clippy::separated_literal_suffix,
     clippy::shadow_reuse,
     clippy::shadow_unrelated,

@@ -1,33 +1,23 @@
+[graph]
 all-features = true
-targets = [
-    { triple = "x86_64-unknown-linux-gnu" },
-]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [advisories]
-notice = "deny"
-unmaintained = "deny"
-unsound = "deny"
-vulnerability = "deny"
+version = 2
 yanked = "deny"
-
-ignore = [
-    # atty: Dependency of `clap` and `colored`
-    "RUSTSEC-2021-0145"
-]
 
 [bans]
 multiple-versions = "allow"
+wildcards = "allow"
 
 [licenses]
-allow-osi-fsf-free = "both"
-confidence-threshold = 1
-copyleft = "allow"
-default = "deny"
-unlicensed = "deny"
-
+version = 2
+confidence-threshold = 1.0
+allow = ["Apache-2.0", "GPL-3.0", "MIT", "MPL-2.0"]
 exceptions = [
     { allow = ["Unicode-DFS-2016"], name = "unicode-ident", version = "*" },
 ]
 
 [sources]
+unknown-git = "deny"
 unknown-registry = "deny"

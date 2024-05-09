@@ -52,19 +52,39 @@ impl<'arena> AxiomKind<'arena> for Equality {
 
         // The multiple `let` statements can be easily rewritten as a pattern match
         // if https://github.com/rust-lang/rfcs/issues/2099 is solved.
-        let App(f, a_b_eq) = *term else { return None; };
-        let App(f, b) = *f.whnf(arena) else { return None; };
-        let App(f, motive_refl) = *f.whnf(arena) else { return None; };
-        let App(f, _motive) = *f.whnf(arena)  else { return None; };
-        let App(f, a) = *f.whnf(arena) else { return None; };
-        let App(f, _aty) = *f.whnf(arena) else { return None; };
-        let Axiom(super::Axiom::Equality(Self::EqRec), _) = *f.unfold(arena).whnf(arena) else { return None; };
+        let App(f, a_b_eq) = *term else {
+            return None;
+        };
+        let App(f, b) = *f.whnf(arena) else {
+            return None;
+        };
+        let App(f, motive_refl) = *f.whnf(arena) else {
+            return None;
+        };
+        let App(f, _motive) = *f.whnf(arena) else {
+            return None;
+        };
+        let App(f, a) = *f.whnf(arena) else {
+            return None;
+        };
+        let App(f, _aty) = *f.whnf(arena) else {
+            return None;
+        };
+        let Axiom(super::Axiom::Equality(Self::EqRec), _) = *f.unfold(arena).whnf(arena) else {
+            return None;
+        };
 
         b.is_def_eq(a, arena).ok()?;
 
-        let App(f, _) = *a_b_eq.whnf(arena) else { return None; };
-        let App(f, _) = *f else { return None; };
-        let Axiom(super::Axiom::Equality(Self::Refl), _) = *f.unfold(arena).whnf(arena) else { return None; };
+        let App(f, _) = *a_b_eq.whnf(arena) else {
+            return None;
+        };
+        let App(f, _) = *f else {
+            return None;
+        };
+        let Axiom(super::Axiom::Equality(Self::Refl), _) = *f.unfold(arena).whnf(arena) else {
+            return None;
+        };
 
         Some(motive_refl)
     }

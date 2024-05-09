@@ -91,46 +91,46 @@ pub const fn const_<'build>(n: u32) -> impl BuilderTrait<'build> {
 }
 
 /// Returns a closure building the sum of `u` and a constant `n`.
+#[coverage(off)]
 #[inline]
-#[no_coverage]
 pub const fn plus<'build, F: BuilderTrait<'build>>(u: F, n: u32) -> impl BuilderTrait<'build> {
     move |arena, env| Ok(u(arena, env)?.add(n, arena))
 }
 
 /// Returns a closure building the successor of a level built from the given closure `u1`.
+#[coverage(off)]
 #[inline]
-#[no_coverage]
 pub const fn succ<'build, F1: BuilderTrait<'build>>(u1: F1) -> impl BuilderTrait<'build> {
     |arena, env| Ok(u1(arena, env)?.succ(arena))
 }
 
 /// Returns a closure building the max of two levels built from the given closures `u1` and
 /// `u2`.
+#[coverage(off)]
 #[inline]
-#[no_coverage]
 pub const fn max<'build, F1: BuilderTrait<'build>, F2: BuilderTrait<'build>>(u1: F1, u2: F2) -> impl BuilderTrait<'build> {
     |arena, env| Ok(u1(arena, env)?.max(u2(arena, env)?, arena))
 }
 
 /// Returns a closure building the imax of two levels built from the given closures `u1` and
 /// `u2`.
+#[coverage(off)]
 #[inline]
-#[no_coverage]
 pub const fn imax<'build, F1: BuilderTrait<'build>, F2: BuilderTrait<'build>>(u1: F1, u2: F2) -> impl BuilderTrait<'build> {
     |arena, env| Ok(u1(arena, env)?.imax(u2(arena, env)?, arena))
 }
 
 /// Returns the empty level vector.
+#[coverage(off)]
 #[inline]
-#[no_coverage]
 #[must_use]
 pub const fn nil<'build>() -> impl VecBuilderTrait<'build> {
     |_, _| Ok(Vec::new())
 }
 
 /// Returns a closure appending the level built from `elt` to the vector built from `vec`.
+#[coverage(off)]
 #[inline]
-#[no_coverage]
 pub const fn append<'build, H: BuilderTrait<'build>, T: VecBuilderTrait<'build>>(vec: T, elt: H) -> impl VecBuilderTrait<'build> {
     |arena, env| {
         let mut v = vec(arena, env)?;
@@ -155,6 +155,7 @@ pub(crate) mod raw {
         move |arena| Level::var(id, arena)
     }
 
+    #[allow(clippy::redundant_closure)]
     pub const fn zero() -> impl BuilderTrait {
         |arena| Level::zero(arena)
     }

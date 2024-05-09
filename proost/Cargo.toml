@@ -15,10 +15,8 @@ parser.path = "../parser"
 elaboration.path = "../elaboration"
 
 clap.workspace = true
+colored.workspace = true
 derive_more.workspace = true
-
-atty = "0.2"
-colored = "2"
-path-absolutize = "3"
-rustyline = "10"
-rustyline-derive = "0.7"
+path-absolutize.workspace = true
+rustyline-derive.workspace = true
+rustyline.workspace = true

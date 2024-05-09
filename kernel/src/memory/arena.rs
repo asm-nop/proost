@@ -108,14 +108,14 @@ impl<'arena> Arena<'arena> {
     /// Stores a slice of levels in the arena.
     ///
     /// This is most importantly used by [instantiated declarations](super::declaration::InstantiatedDeclaration).
-    pub(crate) fn store_level_slice(&mut self, slice: &[Level<'arena>]) -> &'arena [Level<'arena>] {
+    pub(crate) fn store_level_slice(&self, slice: &[Level<'arena>]) -> &'arena [Level<'arena>] {
         self.alloc.alloc_slice_copy(slice)
     }
 
     /// Stores a string in the arena.
     ///
     /// This is typically done to ensure strings live long enough when manipulating them.
-    pub(crate) fn store_name(&mut self, name: &str) -> &'arena str {
+    pub(crate) fn store_name(&self, name: &str) -> &'arena str {
         self.alloc.alloc_str(name)
     }
 

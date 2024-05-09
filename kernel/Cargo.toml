@@ -8,7 +8,6 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
+bumpalo.workspace = true
 derive_more.workspace = true
-
-bumpalo = "3"
-im-rc = "15"
+im-rc.workspace = true

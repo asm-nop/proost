@@ -1,7 +1,7 @@
 //! universe-polymorphic declarations.
 
+use core::cell::OnceCell;
 use core::fmt;
-use std::cell::OnceCell;
 
 use derive_more::Display;
 

@@ -59,16 +59,28 @@ impl<'arena> AxiomKind<'arena> for Natural {
 
         // The multiple `let` statements can be easily rewritten as a pattern match
         // if https://github.com/rust-lang/rfcs/issues/2099 is solved.
-        let App(f, n) = *term else { return None; };
-        let App(f, motive_succ) = *f.whnf(arena) else { return None; };
-        let App(f, motive_0) = *f.whnf(arena) else { return None; };
-        let App(f, motive) = *f.whnf(arena) else { return None; };
-        let Axiom(super::Axiom::Natural(Self::NatRec), lvl) = *f.unfold(arena).whnf(arena) else { return None; };
+        let App(f, n) = *term else {
+            return None;
+        };
+        let App(f, motive_succ) = *f.whnf(arena) else {
+            return None;
+        };
+        let App(f, motive_0) = *f.whnf(arena) else {
+            return None;
+        };
+        let App(f, motive) = *f.whnf(arena) else {
+            return None;
+        };
+        let Axiom(super::Axiom::Natural(Self::NatRec), lvl) = *f.unfold(arena).whnf(arena) else {
+            return None;
+        };
 
         match *n.whnf(arena) {
             Axiom(super::Axiom::Natural(Self::Zero), _) => Some(motive_0),
             App(f, n) => {
-                let Axiom(super::Axiom::Natural(Self::Succ), _) = *f.unfold(arena).whnf(arena) else { return None; };
+                let Axiom(super::Axiom::Natural(Self::Succ), _) = *f.unfold(arena).whnf(arena) else {
+                    return None;
+                };
 
                 let new_rec = Term::app(
                     Term::app(

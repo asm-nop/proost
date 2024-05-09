@@ -11,6 +11,5 @@ version.workspace = true
 elaboration.path = "../elaboration"
 
 derive_more.workspace = true
-
-pest = "2"
-pest_derive = "2"
+pest.workspace = true
+pest_derive.workspace = true

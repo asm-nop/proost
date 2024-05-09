@@ -111,7 +111,7 @@ where
             }),
 
             State::Running => dispatcher
-                .handle_callback::<Shutdown, _>(S::shutdown, |_| self.state = State::Closing)
+                .handle_callback::<Shutdown, _>(S::shutdown, |&()| self.state = State::Closing)
                 .handle_fallthrough(Error {
                     code: ErrorCode::MethodNotFound,
                     message: "Method not found".to_owned(),

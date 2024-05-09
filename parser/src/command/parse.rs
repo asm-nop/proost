@@ -42,7 +42,7 @@ fn parse_level(pair: Pair<Rule>) -> Result<level::Builder> {
             let univ1 = parse_level(iter.next().unwrap())?;
             let univ2 = parse_level(iter.next().unwrap())?;
 
-            Ok(Max(box univ1, box univ2))
+            Ok(Max(Box::new(univ1), Box::new(univ2)))
         },
 
         Rule::IMax => {
@@ -50,7 +50,7 @@ fn parse_level(pair: Pair<Rule>) -> Result<level::Builder> {
             let univ1 = parse_level(iter.next().unwrap())?;
             let univ2 = parse_level(iter.next().unwrap())?;
 
-            Ok(IMax(box univ1, box univ2))
+            Ok(IMax(Box::new(univ1), Box::new(univ2)))
         },
 
         Rule::Plus => {
@@ -64,12 +64,12 @@ fn parse_level(pair: Pair<Rule>) -> Result<level::Builder> {
                 })
             });
 
-            numbers.into_iter().try_fold(univ, |acc, u| u.map(|u| Plus(box acc, u)))
+            numbers.into_iter().try_fold(univ, |acc, u| u.map(|u| Plus(Box::new(acc), u)))
         },
 
         Rule::string => Ok(Var(pair.as_str())),
 
-        univ => unreachable!("unexpected universe level: {univ:?}"),
+        universe => unreachable!("unexpected universe level: {universe:?}"),
     }
 }
 
@@ -94,20 +94,20 @@ fn parse_term(pair: Pair<Rule>) -> Result<term::Builder> {
         },
 
         Rule::Type => pair.into_inner().next_back().map_or_else(
-            || Ok(Builder::new(loc, Type(box level::Builder::Const(0)))),
-            |next| Ok(Builder::new(loc, Type(box parse_level(next)?))),
+            || Ok(Builder::new(loc, Type(Box::new(level::Builder::Const(0))))),
+            |next| Ok(Builder::new(loc, Type(Box::new(parse_level(next)?)))),
         ),
 
         Rule::Sort => pair.into_inner().next_back().map_or_else(
-            || Ok(Builder::new(loc, Sort(box level::Builder::Const(0)))),
-            |next| Ok(Builder::new(loc, Sort(box parse_level(next)?))),
+            || Ok(Builder::new(loc, Sort(Box::new(level::Builder::Const(0))))),
+            |next| Ok(Builder::new(loc, Sort(Box::new(parse_level(next)?)))),
         ),
 
         Rule::App => {
             let mut iter = pair.into_inner().map(parse_term);
             let term = iter.next().unwrap()?;
 
-            iter.try_fold(term, |acc, x| x.map(|x| Builder::new(loc, App(box acc, box x))))
+            iter.try_fold(term, |acc, x| x.map(|x| Builder::new(loc, App(Box::new(acc), Box::new(x)))))
         },
 
         Rule::Abs => {
@@ -121,7 +121,7 @@ fn parse_term(pair: Pair<Rule>) -> Result<term::Builder> {
                 pair.map(move |var| (var.as_str(), type_.clone()))
             })
             .rev()
-            .try_fold(body, |acc, (var, type_)| type_.map(|type_| Builder::new(loc, Abs(var, box type_, box acc))))
+            .try_fold(body, |acc, (var, type_)| type_.map(|type_| Builder::new(loc, Abs(var, Box::new(type_), Box::new(acc)))))
         },
 
         Rule::dProd => {
@@ -135,7 +135,7 @@ fn parse_term(pair: Pair<Rule>) -> Result<term::Builder> {
                 pair.map(move |var| (var.as_str(), type_.clone()))
             })
             .rev()
-            .try_fold(body, |acc, (var, type_)| type_.map(|type_| Builder::new(loc, Prod(var, box type_, box acc))))
+            .try_fold(body, |acc, (var, type_)| type_.map(|type_| Builder::new(loc, Prod(var, Box::new(type_), Box::new(acc)))))
         },
 
         Rule::Prod => {
@@ -144,7 +144,7 @@ fn parse_term(pair: Pair<Rule>) -> Result<term::Builder> {
 
             iter.map(parse_term)
                 .rev()
-                .try_fold(ret, |acc, argtype| argtype.map(|argtype| Builder::new(loc, Prod("_", box argtype, box acc))))
+                .try_fold(ret, |acc, argtype| argtype.map(|argtype| Builder::new(loc, Prod("_", Box::new(argtype), Box::new(acc)))))
         },
 
         term => unreachable!("unexpected term: {term:?}"),
@@ -192,7 +192,7 @@ fn parse_expr(pair: Pair<Rule>) -> Result<Command> {
             let s = iter.next().unwrap();
             let args = parse_args(iter.next().unwrap())?.into_iter();
             let term = parse_term(iter.next_back().unwrap())?;
-            let term = args.fold(term, |acc, (var, type_)| Builder::new(loc, Abs(var, box type_, box acc)));
+            let term = args.fold(term, |acc, (var, type_)| Builder::new(loc, Abs(var, Box::new(type_), Box::new(acc))));
 
             Ok(Command::Define((convert_span(s.as_span()), s.as_str()), None, term))
         },
@@ -205,8 +205,8 @@ fn parse_expr(pair: Pair<Rule>) -> Result<Command> {
             let term = parse_term(iter.next().unwrap())?;
             let ty = args
                 .clone()
-                .fold(ty, |acc, (var, type_)| Builder::new(loc, Prod(var, box type_, box acc)));
-            let term = args.fold(term, |acc, (var, type_)| Builder::new(loc, Abs(var, box type_, box acc)));
+                .fold(ty, |acc, (var, type_)| Builder::new(loc, Prod(var, Box::new(type_), Box::new(acc))));
+            let term = args.fold(term, |acc, (var, type_)| Builder::new(loc, Abs(var, Box::new(type_), Box::new(acc))));
 
             Ok(Command::Define((convert_span(s.as_span()), s.as_str()), Some(ty), term))
         },
@@ -218,9 +218,13 @@ fn parse_expr(pair: Pair<Rule>) -> Result<Command> {
             let vars: Vec<&str> = string_decl.next().unwrap().into_inner().map(|name| name.as_str()).collect();
             let args = parse_args(iter.next().unwrap())?.into_iter();
             let decl = iter.next().map(parse_term).unwrap()?;
-            let decl = args.fold(decl, |acc, (var, type_)| Builder::new(loc, Abs(var, box type_, box acc)));
+            let decl = args.fold(decl, |acc, (var, type_)| Builder::new(loc, Abs(var, Box::new(type_), Box::new(acc))));
 
-            Ok(Command::Declaration((convert_span(s.as_span()), s.as_str()), None, declaration::Builder::Decl(box decl, vars)))
+            Ok(Command::Declaration(
+                (convert_span(s.as_span()), s.as_str()),
+                None,
+                declaration::Builder::Decl(Box::new(decl), vars),
+            ))
         },
 
         Rule::DeclarationCheckType => {
@@ -235,11 +239,11 @@ fn parse_expr(pair: Pair<Rule>) -> Result<Command> {
 
             let ty = args
                 .clone()
-                .fold(ty, |acc, (var, type_)| Builder::new(loc, Prod(var, box type_, box acc)));
-            let decl = args.fold(decl, |acc, (var, type_)| Builder::new(loc, Abs(var, box type_, box acc)));
+                .fold(ty, |acc, (var, type_)| Builder::new(loc, Prod(var, Box::new(type_), Box::new(acc))));
+            let decl = args.fold(decl, |acc, (var, type_)| Builder::new(loc, Abs(var, Box::new(type_), Box::new(acc))));
 
-            let ty = declaration::Builder::Decl(box ty, vars.clone());
-            let decl = declaration::Builder::Decl(box decl, vars);
+            let ty = declaration::Builder::Decl(Box::new(ty), vars.clone());
+            let decl = declaration::Builder::Decl(Box::new(decl), vars);
 
             Ok(Command::Declaration((convert_span(s.as_span()), s.as_str()), Some(ty), decl))
         },
@@ -262,7 +266,7 @@ fn parse_expr(pair: Pair<Rule>) -> Result<Command> {
             Ok(Command::Search(s))
         },
 
-        command => unreachable!("Unexpected command: {:?}", command),
+        cmd => unreachable!("Unexpected command: {:?}", cmd),
     }
 }
 
@@ -320,7 +324,7 @@ mod tests {
             line("def x : Type := Prop"),
             Ok(Define(
                 (Location::new((1, 5), (1, 6)), "x"),
-                Some(Builder::new(Location::new((1, 9), (1, 14)), Type(box level::Builder::Const(0)))),
+                Some(Builder::new(Location::new((1, 9), (1, 14)), Type(Box::new(level::Builder::Const(0))))),
                 Builder::new(Location::new((1, 17), (1, 21)), Prop)
             ))
         );
@@ -333,11 +337,11 @@ mod tests {
             Ok(Declaration(
                 (Location::new((1, 5), (1, 6)), "x"),
                 Some(declaration::Builder::Decl(
-                    box Builder::new(Location::new((1, 13), (1, 19)), Type(box level::Builder::Var("u"))),
+                    Box::new(Builder::new(Location::new((1, 13), (1, 19)), Type(Box::new(level::Builder::Var("u"))))),
                     vec!["u"]
                 )),
                 declaration::Builder::Decl(
-                    box Builder::new(Location::new((1, 23), (1, 30)), VarInstance("foo", vec![level::Builder::Var("u")])),
+                    Box::new(Builder::new(Location::new((1, 23), (1, 30)), VarInstance("foo", vec![level::Builder::Var("u")]))),
                     vec!["u"]
                 )
             ))
@@ -350,7 +354,10 @@ mod tests {
                 None,
                 Builder::new(
                     Location::new((1, 10), (1, 21)),
-                    VarInstance("y", vec![level::Builder::Max(box level::Builder::Const(1), box level::Builder::Const(2))])
+                    VarInstance("y", vec![level::Builder::Max(
+                        Box::new(level::Builder::Const(1)),
+                        Box::new(level::Builder::Const(2))
+                    )])
                 ),
             ))
         );
@@ -395,22 +402,22 @@ mod tests {
                     Location::new((1, 1), (1, 34)),
                     Abs(
                         "A",
-                        box Builder::new(Location::new((1, 13), (1, 17)), Prop),
-                        box Builder::new(
+                        Box::new(Builder::new(Location::new((1, 13), (1, 17)), Prop)),
+                        Box::new(Builder::new(
                             Location::new((1, 1), (1, 34)),
                             Abs(
                                 "B",
-                                box Builder::new(Location::new((1, 13), (1, 17)), Prop),
-                                box Builder::new(
+                                Box::new(Builder::new(Location::new((1, 13), (1, 17)), Prop)),
+                                Box::new(Builder::new(
                                     Location::new((1, 1), (1, 34)),
                                     Abs(
                                         "C",
-                                        box Builder::new(Location::new((1, 24), (1, 28)), Prop),
-                                        box Builder::new(Location::new((1, 33), (1, 34)), Var("A"))
+                                        Box::new(Builder::new(Location::new((1, 24), (1, 28)), Prop)),
+                                        Box::new(Builder::new(Location::new((1, 33), (1, 34)), Var("A")))
                                     )
-                                )
+                                ))
                             )
-                        )
+                        ))
                     )
                 )
             ))
@@ -424,7 +431,7 @@ mod tests {
             Ok(Declaration(
                 (Location::new((1, 5), (1, 6)), "x"),
                 None,
-                declaration::Builder::Decl(box Builder::new(Location::new((1, 13), (1, 17)), Prop), vec![])
+                declaration::Builder::Decl(Box::new(Builder::new(Location::new((1, 13), (1, 17)), Prop)), vec![])
             ))
         );
 
@@ -433,7 +440,7 @@ mod tests {
             Ok(Declaration(
                 (Location::new((1, 5), (1, 6)), "x"),
                 None,
-                declaration::Builder::Decl(box Builder::new(Location::new((1, 17), (1, 21)), Prop), vec!["u", "v"])
+                declaration::Builder::Decl(Box::new(Builder::new(Location::new((1, 17), (1, 21)), Prop)), vec!["u", "v"])
             ))
         );
     }
@@ -444,7 +451,7 @@ mod tests {
             line("check Prop : Type"),
             Ok(CheckType(
                 Builder::new(Location::new((1, 7), (1, 11)), Prop),
-                Builder::new(Location::new((1, 14), (1, 18)), Type(box level::Builder::Const(0)))
+                Builder::new(Location::new((1, 14), (1, 18)), Type(Box::new(level::Builder::Const(0))))
             ))
         );
     }
@@ -458,7 +465,7 @@ mod tests {
     fn successful_gettype_sort() {
         assert_eq!(
             line("check Sort"),
-            Ok(GetType(Builder::new(Location::new((1, 7), (1, 11)), Sort(box level::Builder::Const(0)))))
+            Ok(GetType(Builder::new(Location::new((1, 7), (1, 11)), Sort(Box::new(level::Builder::Const(0))))))
         );
     }
 
@@ -481,17 +488,17 @@ mod tests {
     fn successful_type() {
         assert_eq!(
             line("check Type"),
-            Ok(GetType(Builder::new(Location::new((1, 7), (1, 11)), Type(box level::Builder::Const(0)))))
+            Ok(GetType(Builder::new(Location::new((1, 7), (1, 11)), Type(Box::new(level::Builder::Const(0))))))
         );
 
         assert_eq!(
             line("check Type 0"),
-            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Type(box level::Builder::Const(0)))))
+            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Type(Box::new(level::Builder::Const(0))))))
         );
 
         assert_eq!(
             line("check Type 1"),
-            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Type(box level::Builder::Const(1)))))
+            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Type(Box::new(level::Builder::Const(1))))))
         );
     }
 
@@ -499,24 +506,24 @@ mod tests {
     fn successful_sort() {
         assert_eq!(
             line("check Sort"),
-            Ok(GetType(Builder::new(Location::new((1, 7), (1, 11)), Sort(box level::Builder::Const(0)))))
+            Ok(GetType(Builder::new(Location::new((1, 7), (1, 11)), Sort(Box::new(level::Builder::Const(0))))))
         );
 
         assert_eq!(
             line("check Sort 0"),
-            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Sort(box level::Builder::Const(0)))))
+            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Sort(Box::new(level::Builder::Const(0))))))
         );
 
         assert_eq!(
             line("check Sort 1"),
-            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Sort(box level::Builder::Const(1)))))
+            Ok(GetType(Builder::new(Location::new((1, 7), (1, 13)), Sort(Box::new(level::Builder::Const(1))))))
         );
 
         assert_eq!(
             line("check Sort (0 + 1)"),
             Ok(GetType(Builder::new(
                 Location::new((1, 7), (1, 19)),
-                Sort(box level::Builder::Plus(box level::Builder::Const(0), 1))
+                Sort(Box::new(level::Builder::Plus(Box::new(level::Builder::Const(0)), 1)))
             )))
         );
 
@@ -524,7 +531,7 @@ mod tests {
             line("check Sort (0 + 1 + 2)"),
             Ok(GetType(Builder::new(
                 Location::new((1, 7), (1, 23)),
-                Sort(box level::Builder::Plus(box level::Builder::Plus(box level::Builder::Const(0), 1), 2))
+                Sort(Box::new(level::Builder::Plus(Box::new(level::Builder::Plus(Box::new(level::Builder::Const(0)), 1)), 2)))
             )))
         );
 
@@ -532,7 +539,7 @@ mod tests {
             line("check Sort max 0 0"),
             Ok(GetType(Builder::new(
                 Location::new((1, 7), (1, 19)),
-                Sort(box level::Builder::Max(box level::Builder::Const(0), box level::Builder::Const(0)))
+                Sort(Box::new(level::Builder::Max(Box::new(level::Builder::Const(0)), Box::new(level::Builder::Const(0)))))
             )))
         );
 
@@ -540,7 +547,7 @@ mod tests {
             line("check Sort imax 0 0"),
             Ok(GetType(Builder::new(
                 Location::new((1, 7), (1, 20)),
-                Sort(box level::Builder::IMax(box level::Builder::Const(0), box level::Builder::Const(0)))
+                Sort(Box::new(level::Builder::IMax(Box::new(level::Builder::Const(0)), Box::new(level::Builder::Const(0)))))
             )))
         );
     }
@@ -864,12 +871,12 @@ mod tests {
                 Location::new((1, 7), (1, 36)),
                 Prod(
                     "x",
-                    Box::new(Builder::new(Location::new((1, 11), (1, 15)), Type(box level::Builder::Const(0)))),
+                    Box::new(Builder::new(Location::new((1, 11), (1, 15)), Type(Box::new(level::Builder::Const(0))))),
                     Box::new(Builder::new(
                         Location::new((1, 20), (1, 36)),
                         Prod(
                             "y",
-                            Box::new(Builder::new(Location::new((1, 24), (1, 30)), Type(box level::Builder::Const(1)))),
+                            Box::new(Builder::new(Location::new((1, 24), (1, 30)), Type(Box::new(level::Builder::Const(1))))),
                             Box::new(Builder::new(Location::new((1, 35), (1, 36)), Var("x"))),
                         ),
                     )),
@@ -883,12 +890,12 @@ mod tests {
                 Location::new((1, 7), (1, 38)),
                 Prod(
                     "x",
-                    Box::new(Builder::new(Location::new((1, 11), (1, 15)), Type(box level::Builder::Const(0)))),
+                    Box::new(Builder::new(Location::new((1, 11), (1, 15)), Type(Box::new(level::Builder::Const(0))))),
                     Box::new(Builder::new(
                         Location::new((1, 21), (1, 37)),
                         Prod(
                             "y",
-                            Box::new(Builder::new(Location::new((1, 25), (1, 31)), Type(box level::Builder::Const(1)))),
+                            Box::new(Builder::new(Location::new((1, 25), (1, 31)), Type(Box::new(level::Builder::Const(1))))),
                             Box::new(Builder::new(Location::new((1, 36), (1, 37)), Var("x"))),
                         ),
                     )),
@@ -1189,13 +1196,13 @@ mod tests {
                 Location::new((1, 7), (1, 43)),
                 Prod(
                     "_",
-                    Box::new(Builder::new(Location::new((1, 10), (1, 14)), Type(box level::Builder::Const(0)))),
+                    Box::new(Builder::new(Location::new((1, 10), (1, 14)), Type(Box::new(level::Builder::Const(0))))),
                     Box::new(Builder::new(
                         Location::new((1, 24), (1, 40)),
                         Prod(
                             "_",
-                            Box::new(Builder::new(Location::new((1, 24), (1, 30)), Type(box level::Builder::Const(1)))),
-                            Box::new(Builder::new(Location::new((1, 34), (1, 40)), Type(box level::Builder::Const(2))))
+                            Box::new(Builder::new(Location::new((1, 24), (1, 30)), Type(Box::new(level::Builder::Const(1))))),
+                            Box::new(Builder::new(Location::new((1, 34), (1, 40)), Type(Box::new(level::Builder::Const(2)))))
                         )
                     )),
                 )
@@ -1211,12 +1218,12 @@ mod tests {
                 Location::new((1, 7), (1, 44)),
                 Prod(
                     "x",
-                    Box::new(Builder::new(Location::new((1, 12), (1, 16)), Type(box level::Builder::Const(0)))),
+                    Box::new(Builder::new(Location::new((1, 12), (1, 16)), Type(Box::new(level::Builder::Const(0))))),
                     Box::new(Builder::new(
                         Location::new((1, 26), (1, 41)),
                         Prod(
                             "y",
-                            Box::new(Builder::new(Location::new((1, 29), (1, 35)), Type(box level::Builder::Const(1)))),
+                            Box::new(Builder::new(Location::new((1, 29), (1, 35)), Type(Box::new(level::Builder::Const(1))))),
                             Box::new(Builder::new(Location::new((1, 40), (1, 41)), Var("x")))
                         )
                     ),)
@@ -1247,12 +1254,12 @@ mod tests {
 
     #[test]
     fn successful_parsers() {
-        let input = r#"
+        let input = "
             def x := Prop -> Prop
 
             // this is a comment
             check fun x:Prop => x
-        "#;
+        ";
 
         // Since the location will differ, we just check that the kind is correct by displaying output
         assert_eq!(format!("{}", file(input).unwrap()[0]), format!("{}", line("def x := Prop -> Prop").unwrap()));

@@ -61,17 +61,11 @@ impl<'arena> Level<'arena> {
 
             (_, _) if self == rhs && n >= 0 => State::True,
 
-            (&Add(l,k), _) if l.geq_no_subst(rhs, n - (i64::from(k))).is_true() => State::True,
-            (_, &Add(l,k)) if self.geq_no_subst(l, n + (i64::from(k))).is_true() => State::True,
+            (&Add(l, k), _) if l.geq_no_subst(rhs, n - (i64::from(k))).is_true() => State::True,
+            (_, &Add(l, k)) if self.geq_no_subst(l, n + (i64::from(k))).is_true() => State::True,
 
-            (_, &Max(l1, l2))
-                if self.geq_no_subst(l1, n).is_true() || self.geq_no_subst(l2, n).is_true() =>
-            {
-                State::True
-            }
-            (&Max(l1, l2), _) if l1.geq_no_subst(rhs, n).is_true() && l2.geq_no_subst(rhs, n).is_true() => {
-                State::True
-            }
+            (_, &Max(l1, l2)) if self.geq_no_subst(l1, n).is_true() || self.geq_no_subst(l2, n).is_true() => State::True,
+            (&Max(l1, l2), _) if l1.geq_no_subst(rhs, n).is_true() && l2.geq_no_subst(rhs, n).is_true() => State::True,
 
             (_, &IMax(_, v)) | (&IMax(_, v), _) if let Var(i) = *v => State::Stuck(i),
 

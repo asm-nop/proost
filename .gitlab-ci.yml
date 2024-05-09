@@ -1,88 +1,104 @@
-.push-zamok: &push-zamok
-  - eval $(ssh-agent -s)
-  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-  - \[ -d ${ZAMOK_SOURCE} \] && 
-        rsync -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" -rqz ${ZAMOK_SOURCE}/. v-lafeychine@zamok.crans.org:www/proost/${ZAMOK_TARGET} || true
+# This file expects two variables: `NIX_CI_CACHE_PUB_KEY` and `NIX_CI_CACHE_PRIV_KEY`
+# Those variables can be generated with: `nix-store --generate-binary-cache-key ci_nix_store priv.pem pub.pem`
 
-default:
-  image: vlafeychine/rust
-  interruptible: true
-  cache:
-    paths:
-      - .cache/cargo/
-      - target/
+stages: [ nix-cache, lint, tests, coverage, docs ]
 
 variables:
-  CARGO_HOME: "$CI_PROJECT_DIR/.cache/cargo/"
-  RUSTFLAGS: "-D warnings"
+  DEPENDENCIES: ".#proost.inputDerivation nixpkgs#jq nixpkgs#rsync"
+  NIX_STORE_CACHE_PATH: ".ci_nix_cache"
+
+default:
+  image: nixos/nix:2.22.0
+  interruptible: true
+
+  before_script:
+   - echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+   - echo "substituters = file://$(pwd)/${NIX_STORE_CACHE_PATH} https://cache.nixos.org" >> /etc/nix/nix.conf
+   - echo "trusted-public-keys = ${NIX_CI_CACHE_PUB_KEY} cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" >> /etc/nix/nix.conf
+
+   # Since the cache is not guaranteed to be available, it is preferable to build the dependencies for each job (which is no-op if the cache is available)
+   - nix build --print-build-logs ${DEPENDENCIES}
+
+  cache: &nix_cache
+    key:
+      files: [ flake.lock, flake.nix ]
+    paths: [ "${NIX_STORE_CACHE_PATH}" ]
+    policy: pull
 
 
-stages: [ check, build, tests, docs ]
+.build_to_cache:
+  cache:
+    <<: *nix_cache
+    policy: pull-push
 
-format:
-  stage: check
-  cache: []
   script:
-    - cargo deny check
-    - cargo fmt --check
+   - nix build --print-build-logs ${NIX_DERIVATION}
+   - nix store sign --key-file <(echo "${NIX_CI_CACHE_PRIV_KEY}") --recursive ${NIX_DERIVATION}
+   - nix copy --to "file://$(pwd)/${NIX_STORE_CACHE_PATH}" ${NIX_DERIVATION}
 
-lint:
-  stage: check
+.push_zamok:
   script:
-    - cargo clippy --all-targets --all-features --no-deps
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - \[ -d ${ZAMOK_SOURCE} \] &&
+            nix run nixpkgs#rsync -- -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" -rqz ${ZAMOK_SOURCE}/. v-lafeychine@zamok.crans.org:www/proost/${ZAMOK_TARGET} || true
 
-build:
-  stage: build
+
+nix-cache:
+  stage: nix-cache
+  variables:
+    NIX_DERIVATION: ${DEPENDENCIES}
+  extends: .build_to_cache
+
+clippy:
+  stage: lint
   script:
-    - cargo build
+   - nix build --print-build-logs --offline .#checks.x86_64-linux.clippy
+
+deny:
+  stage: lint
+  script:
+   - nix build --print-build-logs .#checks.x86_64-linux.deny
+
+fmt:
+  stage: lint
+  script:
+   - nix build --print-build-logs --offline .#checks.x86_64-linux.fmt
 
 tests:
   stage: tests
-  variables:
-    CARGO_INCREMENTAL: 0
-    EXCL_ENUM_STRUCT: "^([[:space:]]*)(pub |pub(([[:alpha:]]|[[:space:]]|[:])+) )?(enum|struct) "
-    EXCL_ENUM_FN_STRUCT: "^([[:space:]]*)(pub |pub(([[:alpha:]]|[[:space:]]|[:])+) )?(enum|fn|struct) "
-    EXCL_LINE: "//!|#\\[|use|unreachable!|^\\}|${EXCL_ENUM_STRUCT}"
-    EXCL_START: "${EXCL_ENUM_STRUCT}"
-    EXCL_STOP: "^\\}"
-    EXCL_BR_LINE: "#\\[|assert(_eq)?!|(error|warn|info|debug|trace)!|^[[:space:]]*\\}(,)?$|${EXCL_ENUM_FN_STRUCT}"
-    EXCL_BR_START: "#\\[no_coverage\\]|^mod tests \\{|${EXCL_ENUM_STRUCT}"
-    EXCL_BR_STOP: "^\\}"
-    RUSTDOCFLAGS: "${RUSTFLAGS}"
-    RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"
-    ZAMOK_SOURCE: coverage
-    ZAMOK_TARGET: coverage/${CI_COMMIT_REF_SLUG}
-
-  cache:
-    paths:
-      - .cache/cargo/
-
   script:
-    - cargo test
-    - grcov . -s . -b ./target/debug/ --branch --llvm --ignore-not-existing --excl-line "${EXCL_LINE}" --excl-start "${EXCL_START}" --excl-stop "${EXCL_STOP}" --excl-br-line "${EXCL_BR_LINE}" --excl-br-start "${EXCL_BR_START}" --excl-br-stop "${EXCL_BR_STOP}" --ignore "*cargo*" -t cobertura -o ./coverage_raw.xml &&
-        xsltproc --novalid --output ./coverage.xml ./.gitlab-cov.xsl ./coverage_raw.xml || true
-    - grcov . -s . -b ./target/debug/ --branch --llvm --ignore-not-existing --excl-line "${EXCL_LINE}" --excl-start "${EXCL_START}" --excl-stop "${EXCL_STOP}" --excl-br-line "${EXCL_BR_LINE}" --excl-br-start "${EXCL_BR_START}" --excl-br-stop "${EXCL_BR_STOP}" --ignore "*cargo*" -t lcov -o ./coverage.lcov &&
-        genhtml --branch --no-function-coverage --precision 2 ./coverage.lcov -o ./coverage || true
-    - *push-zamok
+   - nix build --print-build-logs --offline .#proost
+
+coverage:
+  stage: coverage
+  variables:
+    ZAMOK_SOURCE: result/html
+    ZAMOK_TARGET: coverage/${CI_COMMIT_REF_SLUG}
 
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: ./coverage.xml
+        path: cobertura.xml
 
-  coverage: '/^  branches...: \d+.\d+%/'
+  coverage: '/^Lines: \d+.\d+/'
 
+  script:
+   - nix build --print-build-logs .#checks.x86_64-linux.coverage
+   - nix run nixpkgs#jq -- -r ".data[0].totals.lines.percent" result/coverage.json | xargs echo "Lines:"
+   - cp result/cobertura.xml .
+   - !reference [ .push_zamok, script ]
 
 docs:
   stage: docs
   variables:
-    ZAMOK_SOURCE: target/doc
+    ZAMOK_SOURCE: result/doc
     ZAMOK_TARGET: doc
 
   only:
     refs: [ main ]
 
   script:
-    - cargo doc --no-deps
-    - *push-zamok
+   - nix build --print-build-logs --offline .#doc
+   - !reference [ .push_zamok, script ]
