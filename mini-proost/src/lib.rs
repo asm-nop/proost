@@ -74,8 +74,8 @@ use evaluator::{ErrorKind, Evaluator};
 use kernel::memory::term::pretty;
 use parser::command::{self, parse, Command};
 
-pub fn process_input(input: &str, file_path: PathBuf) -> ResultProcess {
-    let mut evaluator = Evaluator::new(file_path.clone(), false);
+pub fn process_input(input: &str) -> ResultProcess {
+    let mut evaluator = Evaluator::new("".into(), false);
 
     kernel::memory::arena::use_arena_with_axioms(|arena| {
         let commands = parse::file(input)?;
@@ -85,7 +85,7 @@ pub fn process_input(input: &str, file_path: PathBuf) -> ResultProcess {
             .try_for_each(|command| {
                 evaluator.process(arena, command, &mut vec![]).map(|_| ()).map_err(|err| {
                     evaluator::Error {
-                        kind: ErrorKind::FileError(file_path.to_string_lossy().to_string()),
+                        kind: ErrorKind::FileError("".to_string()),
                         // TODO:
                         location: Location::new((0,0), (0,0)),
                     }
