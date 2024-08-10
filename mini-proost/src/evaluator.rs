@@ -44,6 +44,9 @@ pub enum ErrorKind {
     /// This variable is already defined
     #[display(fmt = "identifier {_0} already defined")]
     BoundVariable(String),
+
+    #[display(fmt = "Miscellaneous error: {_0}")]
+    MiscError(String)
 }
 
 impl std::error::Error for Error {}

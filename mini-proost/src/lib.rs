@@ -63,15 +63,12 @@ extern crate alloc;
 pub mod error;
 pub mod evaluator;
 
-use std::{cmp::max, path::PathBuf};
-use std::env::current_dir;
-use std::io::IsTerminal;
-
+use std::{cmp::max};
 use elaboration::location::Location;
-use error::{Error, Result, ResultProcess};
+use error::{Error, ResultProcess};
 use evaluator::{ErrorKind, Evaluator};
 use kernel::memory::term::pretty;
-use parser::command::{self, parse, Command};
+use parser::command::{parse};
 
 pub fn process_input(input: &str) -> ResultProcess {
     let mut evaluator = Evaluator::new("".into(), false);
@@ -84,8 +81,7 @@ pub fn process_input(input: &str) -> ResultProcess {
             .try_for_each(|command| {
                 evaluator.process(arena, command, &mut vec![]).map(|_| ()).map_err(|err| {
                     evaluator::Error {
-                        kind: ErrorKind::FileError("".to_string()),
-                        // TODO:
+                        kind: ErrorKind::MiscError(err.to_string()),
                         location: Location::new((0,0), (0,0)),
                     }
                     .into()                
