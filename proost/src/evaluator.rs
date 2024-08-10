@@ -13,6 +13,7 @@ use path_absolutize::Absolutize;
 
 use crate::error::Error::{Kernel, TopLevel};
 use crate::error::{Result, ResultProcess};
+use crate::display;
 
 /// Type representing parser errors.
 #[derive(Clone, Debug, Display, Eq, PartialEq)]
@@ -174,7 +175,7 @@ impl<'arena> Evaluator {
                 self.process(arena, command, importing).map(|_| ()).map_err(|err| {
                     // if importation failed, display the associated errors now (the imported file is discarded
                     // right after, and errors may depend on it), and return an error about the command itself.
-                    crate::display(Err(err), false);
+                    display(Err(err), false);
 
                     Error {
                         kind: ErrorKind::FileError(file_path.to_string_lossy().to_string()),
