@@ -1,0 +1,21 @@
+[package]
+name = "mini-proost"
+description = "A simple proof assistant written in Rust"
+
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+kernel.path = "../kernel"
+parser.path = "../parser"
+elaboration.path = "../elaboration"
+
+clap.workspace = true
+colored.workspace = true
+derive_more.workspace = true
+path-absolutize.workspace = true
+rustyline-derive.workspace = true
+rustyline.workspace = true

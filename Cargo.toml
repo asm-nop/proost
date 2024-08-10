@@ -2,9 +2,10 @@
 members = [
     "kernel",
     "parser",
-    "proost",
+    "mini-proost",
+    # "proost",
     # "tilleul",
-    "elaboration"
+    "elaboration",
 ]
 resolver = "2"
 
@@ -13,7 +14,6 @@ anyhow = "1"
 bumpalo = "3"
 clap = { version = "4", features = ["derive"] }
 colored = "2"
-# crossbeam-channel = "0.5"
 derive_more = "0.99"
 env_logger = "0.11"
 im-rc = "15"
@@ -33,7 +33,7 @@ authors = [
     "Arthur Adjedj",
     "Augustin Albert",
     "Vincent Lafeychine",
-    "Lucas Tabary-Maujean"
+    "Lucas Tabary-Maujean",
 ]
 edition = "2021"
 version = "0.3.0"

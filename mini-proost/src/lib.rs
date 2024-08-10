@@ -62,9 +62,8 @@
 extern crate alloc;
 pub mod error;
 pub mod evaluator;
-pub mod rustyline_helper;
 
-use std::cmp::max;
+use std::{cmp::max, path::PathBuf};
 use std::env::current_dir;
 use std::io::IsTerminal;
 
@@ -74,10 +73,24 @@ use elaboration::location::Location;
 use error::{Error, Result, ResultProcess};
 use evaluator::Evaluator;
 use kernel::memory::term::pretty;
-use parser::command::{self, Command};
-use rustyline::error::ReadlineError;
-use rustyline::{Cmd, Config, Editor, EventHandler, KeyCode, KeyEvent, Modifiers};
-use rustyline_helper::{RustyLineHelper, TabEventHandler};
+use parser::command::{self, parse, Command};
+
+pub fn process_input(input: &str) -> ResultProcess{
+    let mut evaluator = Evaluator::new(PathBuf::default(), false);
+
+    kernel::memory::arena::use_arena_with_axioms(|arena| {
+        let commands = parse::file(input)?;
+
+        commands
+            .iter()
+            .try_for_each(|command| {
+                evaluator.process(arena, command, &mut vec![]).map(|_| ()).map_err(|err| {
+                  todo!()
+                })
+            })
+    })
+    .map(|()| None)
+}
 
 /// Toplevel function to display a result, as yielded by the toplevel processing of a command
 ///
