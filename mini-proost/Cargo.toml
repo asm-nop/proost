@@ -13,7 +13,6 @@ kernel.path = "../kernel"
 parser.path = "../parser"
 elaboration.path = "../elaboration"
 
-clap.workspace = true
 colored.workspace = true
 derive_more.workspace = true
 path-absolutize.workspace = true

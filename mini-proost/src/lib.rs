@@ -67,16 +67,15 @@ use std::{cmp::max, path::PathBuf};
 use std::env::current_dir;
 use std::io::IsTerminal;
 
-use clap::Parser;
 use colored::Colorize;
 use elaboration::location::Location;
 use error::{Error, Result, ResultProcess};
-use evaluator::Evaluator;
+use evaluator::{ErrorKind, Evaluator};
 use kernel::memory::term::pretty;
 use parser::command::{self, parse, Command};
 
-pub fn process_input(input: &str) -> ResultProcess{
-    let mut evaluator = Evaluator::new(PathBuf::default(), false);
+pub fn process_input(input: &str, file_path: PathBuf) -> ResultProcess {
+    let mut evaluator = Evaluator::new(file_path.clone(), false);
 
     kernel::memory::arena::use_arena_with_axioms(|arena| {
         let commands = parse::file(input)?;
@@ -85,7 +84,12 @@ pub fn process_input(input: &str) -> ResultProcess{
             .iter()
             .try_for_each(|command| {
                 evaluator.process(arena, command, &mut vec![]).map(|_| ()).map_err(|err| {
-                  todo!()
+                    evaluator::Error {
+                        kind: ErrorKind::FileError(file_path.to_string_lossy().to_string()),
+                        // TODO:
+                        location: Location::new((0,0), (0,0)),
+                    }
+                    .into()                
                 })
             })
     })
