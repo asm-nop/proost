@@ -9,7 +9,6 @@ use elaboration::builder::Buildable;
 use elaboration::location::Location;
 use kernel::memory::arena::Arena;
 use parser::command::{parse, Command};
-use path_absolutize::Absolutize;
 
 use crate::error::Error::{Kernel, TopLevel};
 use crate::error::{Result, ResultProcess};
@@ -84,7 +83,6 @@ impl<'arena> Evaluator {
             .and_then(|path| path.parent())
             .unwrap_or(&self.path)
             .join(relative_path)
-            .absolutize()?
             .to_path_buf();
 
         if file_path.is_file() {

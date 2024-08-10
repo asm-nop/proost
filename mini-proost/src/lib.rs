@@ -67,7 +67,6 @@ use std::{cmp::max, path::PathBuf};
 use std::env::current_dir;
 use std::io::IsTerminal;
 
-use colored::Colorize;
 use elaboration::location::Location;
 use error::{Error, Result, ResultProcess};
 use evaluator::{ErrorKind, Evaluator};
@@ -101,9 +100,9 @@ pub fn process_input(input: &str) -> ResultProcess {
 /// The `toggle_location` indicates whether or not to display a hint for the location of the error
 pub fn display(res: ResultProcess, toggle_location: bool) {
     match res {
-        Ok(None) => println!("{}", "\u{2713}".green()),
+        Ok(None) => println!("{}", "\u{2713}"),
 
-        Ok(Some(t)) => println!("{} {}", "\u{2713}".green(), pretty::Term(t)),
+        Ok(Some(t)) => println!("{} {}", "\u{2713}", pretty::Term(t)),
 
         Err(err) => {
             let location = match err {
@@ -120,10 +119,10 @@ pub fn display(res: ResultProcess, toggle_location: bool) {
             };
 
             if toggle_location && let Some(loc) = location {
-                println!("{} {}", "\u{2717}".red(), pretty_print_loc(loc));
+                println!("{} {}", "\u{2717}", pretty_print_loc(loc));
             };
 
-            println!("{} {err}", "\u{2717}".red());
+            println!("{} {err}", "\u{2717}");
         },
     }
 }
